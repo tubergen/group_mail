@@ -1,10 +1,14 @@
 from django.conf.urls import patterns, include, url
+from group_mail.apps.sms.views import parse_sms
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
 
 urlpatterns = patterns('',
+
+    (r'^reply/', parse_sms),
+
     # Examples:
     # url(r'^$', 'group_mail.views.home', name='home'),
     # url(r'^group_mail/', include('group_mail.foo.urls')),

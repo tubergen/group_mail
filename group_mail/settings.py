@@ -122,7 +122,8 @@ INSTALLED_APPS = (
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'django_twilio', 
+    'django_twilio',
+    'group_mail.apps.sms',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -153,6 +154,8 @@ LOGGING = {
         },
     }
 }
+
+APPEND_SLASH = True
 
 # Twilio configuration
 TWILIO_ACCOUNT_SID = 'AC59626b8126614b7fb7706022f559916f'
