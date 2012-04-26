@@ -3,9 +3,10 @@ from django_twilio.decorators import twilio_view
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from group_mail.apps.sms.models import CustomUser
-
+from group_mail.apps.sms.commands import Command, CreateGroupCmd, JoinGroupCmd, NewUserCmd, ChangeNumberCmd
 
 # Forward declarations
+
 
 def join_group_cmd(*args):
     join_group(args)
@@ -19,19 +20,27 @@ def new_user_cmd(*args):
     new_user(args)
 
 
-STATES = "POST_EMAIL_STATE", "POST_NAME_STATE"
+def change_phone_number_cmd(*args):
+    change_phone_number(args)
+
+
+STATES = "POST_EMAIL_STATE", "GET_NAME_STATE"
 
 COMMANDS = {'#create': create_group_cmd, '#join': join_group_cmd,
-            '#user': new_user_cmd}
+        '#user': new_user_cmd, '#number': change_phone_number_cmd}
 
 USAGE = {'#create': '#create (group name) (group code)',
          '#join': '#join (group name) (group code)',
-         '#user': '#user (email) (first name) (last name)'}
+         '#user': '#user (email) (first name) (last name)',
+         '#number': '#number (your email) (your password)'}
+
+
+COMMAND_CLASSES = {'#create': CreateGroupCmd, '#join': JoinGroupCmd,
+        '#user': NewUserCmd, '#number': ChangeNumberCmd}
 
 
 @twilio_view
 def parse_sms(request):
-    return unrecognized_cmd('hi')
     from_number = request.POST.get('From', '')
     if from_number == '':
         return  # ignore request
@@ -39,25 +48,40 @@ def parse_sms(request):
     sms_data = request.POST.get('Body', '')
     sms_fields = sms_data.split()
     if len(sms_fields) > 0:
-        cmd = sms_fields[0]
+        cmd = COMMAND_CLASSES.get(sms_fields[0], Command)(sms_fields[0])
+        return cmd.execute(from_number, sms_fields)
+    """
 
         # validate user
         try:
             user = CustomUser.objects.get(phone_number=from_number)
         except CustomUser.DoesNotExist:
-            if cmd == '#user':
-                return new_user(from_number, sms_fields)
+            if cmd == '#user' or cmd == '#number':
+                return verify(cmd, from_number, sms_fields)
             else:
                 return respond("We don't recognize this number. Text " +
                     USAGE['#user'] + " to get set up.")
 
         # validate command
         if cmd in COMMANDS.keys():
-            return COMMANDS[cmd](user, sms_fields)
+            return verify(cmd, user, sms_fields))
         else:
             return unrecognized_cmd(cmd)
     else:
         pass  # msg was empty, so ignore
+
+    """
+
+
+def verify(cmd, sms_fields, *args):
+    """ verifies the command and runs it if valid """
+    """
+    expected_sms_len = ar
+    if len(sms_fields) != expected_sms_len:
+        return invalid_cmd(sms_fields[0])
+
+    return COMMANDS[cmd](args, sms_fields)
+    """
 
 
 def valid_cmds():
@@ -66,8 +90,30 @@ def valid_cmds():
 
 def unrecognized_cmd(cmd):
     return respond('The command ' + truncate(cmd, 10) + ' is not'
-            + ' recognized. Please try again. ' +
+            + ' recognized. Please try again.',
             'Valid commands are:\n' + valid_cmds())
+
+
+def check_email(email):
+    resp = None
+    try:
+        validate_email(email)
+    except ValidationError:
+        resp = 'The email "' + email + '" appears to be invalid.' + ' Please try again.'
+
+    return email, resp
+
+
+def change_phone_number(from_number, sms_fields):
+    expected_sms_len = 4
+    if len(sms_fields) != expected_sms_len:
+        return invalid_cmd(sms_fields[0])
+
+    email, resp = check_email(sms_fields[1])
+    if resp is not None:
+        return respond(resp)
+
+    # finish this
 
 
 def new_user(from_number, sms_fields):
@@ -75,23 +121,29 @@ def new_user(from_number, sms_fields):
     if len(sms_fields) < min_sms_len:
         return invalid_cmd(sms_fields[0])
 
+    email, resp = check_email(sms_fields[1])
+    if resp is not None:
+        return respond(resp)
+
     try:
-        email = sms_fields[1]
-        validate_email(email)
-    except ValidationError:
-        return respond('The email "' + sms_fields[1] + '" appears to be invalid.' +
-                ' Please try again.')
+        user = CustomUser.objects.get(email=email)
+        user.phone_number = from_number
+        user.save()
 
-    CustomUser.objects.create(username=email,
-            first_name=truncate(sms_fields[2], 30, False),
-            last_name=truncate(sms_fields[3:], 30, False),
-            email=email,
-            phone_number=from_number)
+        return respond('We notice you already have an account with this email.' +
+                'Text ' + USAGE['#number'] + ' to update the phone number for this account.')
 
-    #  TODO: actually send welcome email
+    except CustomUser.DoesNotExist:
+        CustomUser.objects.create(username=email,
+                first_name=truncate(sms_fields[2], 30, False),
+                last_name=truncate(sms_fields[3:], 30, False),
+                email=email,
+                phone_number=from_number)
 
-    return respond("Success! We've created an account for you and sent you a" +
-            " welcome email. You can now #join and #create groups.")
+        #  TODO: actually send welcome email
+
+        return respond("Success! We've created an account for you and sent you a" +
+                " welcome email. You can now #join and #create groups.")
 
 
 def truncate(text, max_len, include_ellipses=True):
@@ -104,9 +156,10 @@ def truncate(text, max_len, include_ellipses=True):
     return text
 
 
-def respond(msg):
+def respond(*args):
     r = Response()
-    r.sms(msg)
+    for msg in args:
+        r.sms(msg)
     return r
 
 
