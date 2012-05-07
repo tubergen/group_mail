@@ -62,16 +62,15 @@ class Command(Utilities):
             return None
 
     def execute(self, from_number, sms_fields):
-        user = self.get_user(from_number)
-
-        if user is None:
             if self.requires_user:
-                return self.respond("We don't recognize this number. Text %s"
+                user = self.get_user(from_number)
+                if user is not None:
+                    return self.verify_and_execute(sms_fields, user)
+                else:
+                    return self.respond("We don't recognize this number. Text %s"
                         "to get set up." % NewUserCmd.USAGE)
             else:
                 return self.verify_and_execute(sms_fields, from_number)
-
-        return self.verify_and_execute(sms_fields, user)
 
     def verify_and_execute(self, sms_fields, user_identifier):
         """ Depending on the command, user_identifier may be either the user's
@@ -201,6 +200,10 @@ class NewUserCmd(Command):
         self.requires_user = False
 
     def execute_hook(self, sms_fields, from_number):
+        # ensure that we don't accidentally pass a user into this function
+        assert isinstance(from_number, str) or isinstance(from_number, unicode), \
+            "from_number should be a string"
+
         if self.get_user(from_number) is not None:
             return self.respond('There is already an account for this phone number.'
                     ' Text %s if you want to change the email for this number.' % \

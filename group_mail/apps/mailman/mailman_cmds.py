@@ -2,6 +2,8 @@
 
 import sys
 import subprocess
+import MySQLdb
+from django.conf import settings
 
 ##########################################################################
 """All of the following functions return a list of errors as strings."""
@@ -9,7 +11,14 @@ import subprocess
 
 def newlist(list_name, owner_email, list_password):
     args = [_get_script_dir('newlist'), list_name, owner_email, list_password]
-    return _exec_cmd(*args, stdin_hook='\n')
+    errors = _exec_cmd(*args, stdin_hook='\n')
+    if not errors:
+        # mailman doesn't automatically add the list creator as a member, but
+        # we want to
+        errors = add_members(list_name, owner_email)
+        if not errors:
+            add_postfix_mysql_alias(list_name)
+    return errors
 
 
 def remove_members(list_name, members):
@@ -112,6 +121,27 @@ def _exec_cmd(*args, **kwargs):
     except OSError, e:
         print >>sys.stderr, 'Execution failed: ', e
         return [e]
+
+
+def add_postfix_mysql_alias(list_name):
+    """ We have to add an alias to the postfix mysql db which maps
+        list_name@domain.com to list_Name@lists.domain.com to make mailman
+        and postfix cooperate. """
+
+    domain = settings.EMAIL_DOMAIN
+    sql_args = {'from_list': list_name + '@' + domain,
+                'to_list':  list_name + '@lists.' + domain}
+
+    db = MySQLdb.connect(host='localhost', user='root', passwd='root',
+            db='maildb')
+    cursor = db.cursor()
+
+    sql = "INSERT INTO aliases (mail, destination) VALUES (%(from_list)s, %(to_list)s)"
+    cursor.execute(sql, sql_args)
+
+    cursor.close()
+    db.commit()
+    db.close()
 ##########################################################################
 
 
