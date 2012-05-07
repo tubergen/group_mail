@@ -4,6 +4,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
+      ('Brian', 'group.mail.errors@gmail.com'),
     # ('Your Name', 'your_email@example.com'),
 )
 
@@ -160,3 +161,6 @@ APPEND_SLASH = True
 # Twilio configuration
 TWILIO_ACCOUNT_SID = 'AC59626b8126614b7fb7706022f559916f'
 TWILIO_AUTH_TOKEN = 'e4d0ff40be31fe4412808d101599c55d'
+
+# Email settings
+EMAIL_HOST = 'localhost'

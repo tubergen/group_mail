@@ -1,0 +1,4 @@
+#!/bin/bash
+# Dump contents of mailman db
+
+echo "hello world"

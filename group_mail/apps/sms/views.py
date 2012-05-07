@@ -1,3 +1,4 @@
+from django.http import Http404, HttpResponse
 from twilio.twiml import Response
 from django_twilio.decorators import twilio_view
 from django.core.exceptions import ValidationError
@@ -24,7 +25,7 @@ def change_phone_number_cmd(*args):
     change_phone_number(args)
 
 
-STATES = "POST_EMAIL_STATE", "GET_NAME_STATE"
+STATES = "GET_EMAIL_STATE", "GET_NAME_STATE"
 
 COMMANDS = {'#create': create_group_cmd, '#join': join_group_cmd,
         '#user': new_user_cmd, '#number': change_phone_number_cmd}
@@ -41,15 +42,16 @@ COMMAND_CLASSES = {'#create': CreateGroupCmd, '#join': JoinGroupCmd,
 
 @twilio_view
 def parse_sms(request):
-    from_number = request.POST.get('From', '')
-    if from_number == '':
-        return  # ignore request
-
-    sms_data = request.POST.get('Body', '')
-    sms_fields = sms_data.split()
-    if len(sms_fields) > 0:
+    from_number = request.GET.get('From', '')
+    sms_data = request.GET.get('Body', '')
+    #  return respond(sms_data)
+    if from_number != '' and sms_data != '':
+        sms_fields = sms_data.split()
         cmd = COMMAND_CLASSES.get(sms_fields[0], Command)(sms_fields[0])
         return cmd.execute(from_number, sms_fields)
+
+    return HttpResponse('hello world')
+    raise Http404
     """
 
         # validate user

@@ -1,11 +1,9 @@
-from twilio.twiml import Response
+xcfrom twilio.twiml import Response
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from group_mail.apps.sms.models import CustomUser, Group
 #  from django.http import HttpResponse
-from group_mail.apps.mailman import mailman_cmds
 
-MAX_SMS_LEN = 160
 
 USAGE = {'#create': '#create (group name) (group code)',
         '#join': '#join (group name) (group code)',
@@ -24,18 +22,14 @@ class Utilities(object):
         return r
 
     def truncate(self, text, max_len, include_ellipses=True):
-        """ Truncates text to max_len. If include_ellipses is set to True,
-            max_len must be >= 3 characters. """
         if len(text) > max_len:
             if include_ellipses:
-                assert(max_len >= 3)
                 text = text[:(max_len - 3)] + '...'
             else:
                 text = text[:max_len]
         return text
 
     def check_email(self, email):
-        """ Returns None if the email is valid. Returns an error string otherwise. """
         resp = None
         try:
             validate_email(email)
@@ -47,12 +41,11 @@ class Utilities(object):
 class Command(Utilities):
     USAGE = None
 
-    def __init__(self, cmd='', modify_mailman_db=True):
+    def __init__(self, cmd=''):
         self.requires_user = False
         self.expected_sms_len = None
         self.min_sms_len = None
         self.cmd = cmd
-        self.modify_mailman_db = modify_mailman_db
 
     def get_user(self, from_number):
         try:
@@ -92,8 +85,8 @@ class Command(Utilities):
         return '\n'.join(USAGE.values())
 
     def unrecognized_cmd(self):
-        return self.respond('%s is not recognized.'
-                    % self.truncate(self.cmd, 10) + ' Valid commands are:\n' + self.valid_cmds())
+        return self.respond('The command %s is not recognized. Please try again.'
+                % self.truncate(self.cmd, 10) + ' Valid commands are:\n' + self.valid_cmds())
 
     def invalid_cmd(self):
         return self.respond("We couldn't understand your %s request." % self.cmd +
@@ -104,8 +97,8 @@ class CreateGroupCmd(Command):
     CMD_STR = '#create'
     USAGE = USAGE[CMD_STR]
 
-    def __init__(self, cmd=CMD_STR, modify_mailman_db=True):
-        super(CreateGroupCmd, self).__init__(cmd, modify_mailman_db)
+    def __init__(self, cmd=CMD_STR):
+        super(CreateGroupCmd, self).__init__(cmd)
         self.expected_sms_len = 3
         self.requires_user = True
 
@@ -134,31 +127,21 @@ class CreateGroupCmd(Command):
             if resp is not None:
                 return self.respond(resp)
 
-            # At this point, we suspect the group creation is valid
-
-            # Try creating the mailman list first, since this is the last place
-            # we expect something might go wrong
-            if self.modify_mailman_db:
-                errors = mailman_cmds.newlist(group_name, user.email, group_code)
-                if errors:
-                    return self.respond(self.truncate(', '.join(errors), MAX_SMS_LEN))
-
             group = Group.objects.create(name=group_name,
                                          code=group_code)
 
-            group.members.add(user)
-            group.admins.add(user)
-
-            return self.respond("Success! The group '%s' has been created." % group_name + \
-                    ' Have members text #join (group name) (group code) to join.')
+        group.members.add(user)
+        group.admins.add(user)
+        return self.respond("Success! The group '%s' has been created." % group_name + \
+                ' Have members text #join (group name) (group code) to join.')
 
 
 class JoinGroupCmd(Command):
     CMD_STR = '#user'
     USAGE = USAGE[CMD_STR]
 
-    def __init__(self, cmd=CMD_STR, modify_mailman_db=True):
-        super(JoinGroupCmd, self).__init__(cmd, modify_mailman_db)
+    def __init__(self, cmd=CMD_STR):
+        super(JoinGroupCmd, self).__init__(cmd)
         self.expected_sms_len = 3
         self.requires_user = True
 
@@ -178,15 +161,6 @@ class JoinGroupCmd(Command):
         if user in group.members.all():
             return self.respond("You're already a member of the group '%s.'" % group_name)
         else:
-            # At this point, we suspect the join group cmd is valid
-
-            # Try modifying the mailman list first, since this is the last place
-            # we expect something might go wrong
-            if self.modify_mailman_db:
-                errors = mailman_cmds.add_members(group_name, user.email)
-                if errors:
-                    return self.respond(self.truncate(', '.join(errors), MAX_SMS_LEN))
-
             group.members.add(user)
             return self.respond("Success! You've been added to the group '%s.'" % group_name)
 
@@ -195,8 +169,8 @@ class NewUserCmd(Command):
     CMD_STR = '#user'
     USAGE = USAGE[CMD_STR]
 
-    def __init__(self, cmd=CMD_STR, modify_mailman_db=True):
-        super(NewUserCmd, self).__init__(cmd, modify_mailman_db)
+    def __init__(self, cmd=CMD_STR):
+        super(NewUserCmd, self).__init__(cmd)
         self.min_sms_len = 4
         self.requires_user = False
 
@@ -218,10 +192,9 @@ class NewUserCmd(Command):
                     USAGE[ChangeNumberCmd.CMD_STR])
 
         except CustomUser.DoesNotExist:
-            CustomUser.objects.create(
-                    username=email,
+            CustomUser.objects.create(username=email,
                     first_name=self.truncate(sms_fields[2], 30, False),
-                    last_name=self.truncate(' '.join(sms_fields[3:]), 30, False),
+                    last_name=self.truncate(sms_fields[3:], 30, False),
                     email=email,
                     phone_number=from_number)
 

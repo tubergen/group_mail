@@ -7,7 +7,7 @@ from group_mail.apps.sms.views import parse_sms
 
 urlpatterns = patterns('',
 
-    (r'^reply/', parse_sms),
+    (r'^twilio_reply/', parse_sms),
 
     # Examples:
     # url(r'^$', 'group_mail.views.home', name='home'),
