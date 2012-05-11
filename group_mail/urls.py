@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import patterns
 from group_mail.apps.sms.views import parse_sms
 
 # Uncomment the next two lines to enable the admin:
@@ -18,4 +18,17 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
+)
+
+#django.contrib.auth.views
+urlpatterns += patterns('django.contrib.auth.views',
+    (r'^password_reset/$', 'password_reset', {}),
+
+    (r'^password_reset/done/$', 'password_reset_done', {}),
+
+    (r'^reset/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$', 'password_reset_confirm',
+        {'post_reset_redirect': 'accounts/login/',
+         'post_reset_redirect': 'accounts/reset/done/'}),
+
+    (r'^reset/done/$', 'password_reset_complete', {}),
 )
