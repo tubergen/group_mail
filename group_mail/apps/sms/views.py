@@ -42,6 +42,7 @@ COMMAND_CLASSES = {'#create': CreateGroupCmd, '#join': JoinGroupCmd,
 
 @twilio_view
 def parse_sms(request):
+    return HttpResponse(User.objects.filter(email='brian.tubergen@gmail.com'))
     from_number = request.GET.get('From', '')
     sms_data = request.GET.get('Body', '')
     #  return respond(sms_data)
@@ -220,3 +221,41 @@ def reply_to_sms_messages(request):
     r.sms('You wrote... ' + data)
     return r
 """
+
+
+import copy
+
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.models import User
+
+
+def debug(request):
+    return send_welcome_email(request, u'brian.tubergen@gmail.com')
+
+
+def send_welcome_email(request, to_email):
+    # return HttpResponse(to_email)
+    try:
+        validate_email(to_email)
+    except ValidationError:
+        raise
+    emails = []
+    for u in User.objects.all():
+        emails.append(u.email)
+    # return HttpResponse(str(emails))
+    return HttpResponse(str(User.objects.filter(email__iexact=to_email)))  # , is_active=True)))
+
+    post = copy.copy(request.POST)
+    post['email'] = to_email
+    form = PasswordResetForm(post)   # {'email': to_email})
+    if form.is_valid():
+        # return HttpResponse(str(form.is_valid()))
+        form.clean_email()
+        return HttpResponse(str(form.users_cache))
+
+    opts = {
+        'email_template_name': 'registration/welcome_email.html',
+        'subject_template_name': 'welcome/welcome_subject.txt',
+    }
+    # form.save(**opts)
+    opts

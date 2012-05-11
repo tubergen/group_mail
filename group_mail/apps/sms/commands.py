@@ -4,6 +4,7 @@ from django.core.validators import validate_email
 from group_mail.apps.sms.models import CustomUser, Group
 #  from django.http import HttpResponse
 from group_mail.apps.mailman import mailman_cmds
+from django.contrib.auth.forms import PasswordResetForm
 
 MAX_SMS_LEN = 160
 
@@ -42,6 +43,21 @@ class Utilities(object):
         except ValidationError:
             resp = 'The email %s appears to be invalid. Please try again.' % email
         return resp
+
+    def _send_welcome_email(request, to_email):
+        try:
+            validate_email(to_email)
+        except ValidationError:
+            raise
+
+        # use the password reset form to send the welcome email
+        form = PasswordResetForm({'email': to_email})
+        if form.is_valid():
+            opts = {
+                'email_template_name': 'registration/welcome_email.html',
+                'subject_template_name': 'registration/welcome_subject.txt',
+            }
+            form.save(**opts)
 
 
 class Command(Utilities):
@@ -228,7 +244,7 @@ class NewUserCmd(Command):
                     email=email,
                     phone_number=from_number)
 
-            #  TODO: actually send welcome email
+            self.send_welcome_email(email)
 
             return self.respond("Success! We've created an account for you and sent you a"
                     " welcome email. You can now #join and #create groups.")

@@ -1,5 +1,5 @@
 from django.conf.urls import patterns
-from group_mail.apps.sms.views import parse_sms
+from group_mail.apps.sms.views import parse_sms, debug
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -8,6 +8,7 @@ from group_mail.apps.sms.views import parse_sms
 urlpatterns = patterns('',
 
     (r'^twilio_reply/', parse_sms),
+    (r'^debug2/', debug),
 
     # Examples:
     # url(r'^$', 'group_mail.views.home', name='home'),
@@ -31,4 +32,8 @@ urlpatterns += patterns('django.contrib.auth.views',
     #     'post_reset_redirect': 'accounts/reset/done/'}),
 
     (r'^reset/done/$', 'password_reset_complete', {}),
+)
+
+urlpatterns += patterns('group_mail.apps.sms.welcome',
+    (r'^debug/', 'debug', {}),
 )
