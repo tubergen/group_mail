@@ -44,7 +44,7 @@ class Utilities(object):
             resp = 'The email %s appears to be invalid. Please try again.' % email
         return resp
 
-    def _send_welcome_email(request, to_email):
+    def send_welcome_email(request, to_email):
         try:
             validate_email(to_email)
         except ValidationError:

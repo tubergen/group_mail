@@ -42,7 +42,6 @@ COMMAND_CLASSES = {'#create': CreateGroupCmd, '#join': JoinGroupCmd,
 
 @twilio_view
 def parse_sms(request):
-    return HttpResponse(User.objects.filter(email='brian.tubergen@gmail.com'))
     from_number = request.GET.get('From', '')
     sms_data = request.GET.get('Body', '')
     #  return respond(sms_data)
