@@ -3,7 +3,7 @@ from twilio.twiml import Response
 from django_twilio.decorators import twilio_view
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from group_mail.apps.sms.models import CustomUser
+from group_mail.apps.common.models import CustomUser
 from group_mail.apps.sms.commands import Command, CreateGroupCmd, JoinGroupCmd, NewUserCmd, ChangeNumberCmd
 
 # Forward declarations

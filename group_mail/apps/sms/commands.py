@@ -1,7 +1,7 @@
 from twilio.twiml import Response
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from group_mail.apps.sms.models import CustomUser, Group
+from group_mail.apps.common.models import CustomUser, Group
 #  from django.http import HttpResponse
 from group_mail.apps.mailman import mailman_cmds
 from django.contrib.auth.forms import PasswordResetForm

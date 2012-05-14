@@ -141,6 +141,7 @@ INSTALLED_APPS = (
     'django_twilio',
     'group_mail.apps.sms',
     'group_mail.apps.common',
+    'group_mail.apps.group',
 )
 
 # A sample logging configuration. The only tangible logging
