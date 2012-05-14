@@ -1,5 +1,46 @@
-{% block title %} {% endblock %}
-{% block pagetitle %} {% endblock %}
-{% block content %} {% endblock %}
+<!DOCTYPE html>
 
+<html lang="en">
+  <head>
+    <title>{% block title %}Group Mail{% endblock %}</title>
+    <link href="static/bootstrap/less/bootstrap.less" rel="stylesheet/less">
+    {# <link href="static/bootstrap/docs.css" rel="stylesheet/less"> #}
+    <script src="static/javascripts/less-1.3.0.min.js"></script>
 
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    {% block header %}
+    {% include "navbar.html" %}
+    {% endblock %}
+    <div class="container">
+      <div id="content">
+        <div id="left-content">
+          {% block left_content %}
+          {% endblock %}
+        </div>
+        <div id="right-content">
+          <div id="top-content">
+            {% block top_content %}
+              {# contains page title and description #}
+              <h1 id="title">Page title</h1>
+            {% endblock %}
+          </div>
+          <div id="main-content">
+            {% block main_content %}
+              {# contains wall, post, and right bar #}
+            {% endblock %}
+          </div>
+        </div>
+        {% block content %}
+        {% endblock %}
+      </div>
+
+      <div id="footer">
+        {% block footer %}
+          <div class="footer">Copyright &#169; 2012 Brian Tubergen, Anne Clougherty, Ellie Clougherty</div>
+        {% endblock %}
+      </div>
+    </div>
+  </body>
+</html>
