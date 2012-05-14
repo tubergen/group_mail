@@ -9,8 +9,12 @@
         <li><a href="/login/">Placeholder</a></li>
       </ul>
       <div class="actions">
+        {% if not user.is_authenticated %}
         <a class="text pull-right span1" href="/login/">Login</a>
+        {% else %}
+        <a class="text pull-right span1" href="/logout/">Logout</a>
         <div>{% include "create_group_box.html" %}</div>
+        {% endif %}
       </div>
     </div>
   </div>

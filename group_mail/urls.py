@@ -12,6 +12,7 @@ urlpatterns = patterns('',
     (r'^twilio_reply/$', parse_sms),
     (r'^$', direct_to_template, {'template': 'home.html'}),
     (r'^login/$', 'django.contrib.auth.views.login'),
+    (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 
     # Examples:
     # url(r'^$', 'group_mail.views.home', name='home'),

@@ -182,3 +182,5 @@ TWILIO_AUTH_TOKEN = 'e4d0ff40be31fe4412808d101599c55d'
 # Email settings
 EMAIL_HOST = 'localhost'
 EMAIL_DOMAIN = 'briantubergen.com'
+
+LOGIN_REDIRECT_URL = '/'
