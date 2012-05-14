@@ -2,5 +2,5 @@ from django import forms
 
 
 class CreateGroupForm(forms.Form):
-    email = forms.EmailField(required=False)
+    group = forms.CharField()
     code = forms.CharField()
