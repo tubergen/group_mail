@@ -4,16 +4,16 @@
 <div class="navbar navbar-fixed-top">
   <div class="navbar-inner">
     <div class="container">
-      <a class="brand" href="/">TheEventboard</a>
+      <a class="brand" href="/">Group Mail</a>
       <ul class="nav">
         <li><a href="/login/">Placeholder</a></li>
       </ul>
       <div class="actions">
         {% if not user.is_authenticated %}
-        <a class="text pull-right span1" href="/login/">Login</a>
+        {% include "navbar/login_box.html" %}
         {% else %}
         <a class="text pull-right span1" href="/logout/">Logout</a>
-        <div>{% include "create_group_box.html" %}</div>
+        {% include "navbar/create_group_box.html" %}
         {% endif %}
       </div>
     </div>

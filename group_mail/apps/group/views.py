@@ -2,11 +2,14 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.contrib.auth.models import User
 from django.template import RequestContext
-from eventboard.apps.events.forms import EventCreationForm
-from eventboard.apps.events.models import Event
 from datetime import datetime
 
 
+def group_info(request, group_name):
+    return HttpResponse('this group is named: ' + group_name)
+
+
+'''
 def create_group(request):
     if request.method == 'POST':
         form = EventCreationForm(request.POST)
@@ -35,3 +38,4 @@ def create_group(request):
     return render_to_response('group/create.html',
                               {'form': form},
                               RequestContext(request))
+'''

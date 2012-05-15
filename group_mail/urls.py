@@ -1,7 +1,8 @@
 from django.conf.urls import patterns
-from django.views.generic.simple import direct_to_template
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
+from group_mail.apps.common.views import homepage_splitter
+from group_mail.apps.group.views import group_info
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -10,7 +11,8 @@ from group_mail.apps.sms.views import parse_sms
 urlpatterns = patterns('',
 
     (r'^twilio_reply/$', parse_sms),
-    (r'^$', direct_to_template, {'template': 'home.html'}),
+    (r'^$', homepage_splitter),
+    (r'^groups/(?P<group_name>[a-z]+)$', group_info),
     (r'^login/$', 'django.contrib.auth.views.login'),
     (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 

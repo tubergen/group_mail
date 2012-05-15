@@ -173,6 +173,14 @@ LOGGING = {
     }
 }
 
+# Will cause request.user to return CustomUser objects
+AUTHENTICATION_BACKENDS = (
+    'group_mail.backends.auth_backends.CustomUserModelBackend',
+)
+
+# Will cause request.user to return CustomUser objects
+CUSTOM_USER_MODEL = 'common.CustomUser'
+
 APPEND_SLASH = True
 
 # Twilio configuration
