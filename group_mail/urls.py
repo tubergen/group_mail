@@ -14,7 +14,7 @@ urlpatterns = patterns('',
 
     (r'^twilio_reply/$', parse_sms),
     (r'^$', homepage_splitter),
-    (r'^groups/(?P<group_name>[0-9A-Za-z]+)$', group_info),
+    (r'^group/(?P<group_name>[0-9A-Za-z]+)$', group_info),
     (r'^login/$', 'django.contrib.auth.views.login'),
     (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 

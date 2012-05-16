@@ -13,7 +13,10 @@ def populate(request):
         name = 'user%d' % i
         email = '%s@gmail.com' % name
         # phone_number = '703555333%d' % i
-        CustomUser.objects.create_user(email, email, password)
+        u = CustomUser.objects.create_user(email, email, password)
+        u.first_name = '%s_first_name' % name
+        u.last_name = '%s_last_name' % name
+        u.save()
 
     users = CustomUser.objects.all()
     for i in xrange(0, num_groups):

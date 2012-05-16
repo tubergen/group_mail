@@ -1,18 +1,40 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from group_mail.apps.common.models import Group, CustomUser
+from django.http import HttpResponseRedirect
 
 
 def group_info(request, group_name):
-    group = Group.objects.get(name=group_name)
+    try:
+        group = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return HttpResponseRedirect('/')
+
+    if request.user not in group.members.all():
+        return HttpResponseRedirect('/')
+
     errors = []
     if request.method == 'POST':
         if not request.POST.get('removed_members'):
             errors.append('No members were selected to be removed.')
+        """
+        # unclear whether we want to restrict user removal to admins
+        if not request.user in group.admins.all():
+            errors.append('Must be a group admin to remove members.')
+        """
         if not errors:
-            for member_email in request.POST['removed_members']:
-                user = CustomUser.objects.get(member_email)
+            for member_email in request.POST.getlist('removed_members'):
+                try:
+                    user = CustomUser.objects.get(email=member_email)
+                except CustomUser.DoesNotExist:
+                    user = None
                 group.members.remove(user)
+
+            return render_to_response('group/member_removed.html',
+                    {'group': group,
+                    'member': user,
+                    'errors': errors},
+                    context_instance=RequestContext(request))
 
     return render_to_response('group/info.html',
             {'group': group,

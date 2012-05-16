@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Member Removed{% endblock %}
+{% block pagetitle %}Member Removed{% endblock %}
+
+{% block content %}
+
+<p>Successfully removed {{ member.email }} from {{ group.name }}.</p>
+<a href="/group/{{ group.name }}">Return</a>
+
+{% endblock %}
