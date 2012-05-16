@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.conf.urls import patterns
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
 from group_mail.apps.common.views import homepage_splitter
 from group_mail.apps.group.views import group_info
+from group_mail.apps.populate_db.views import populate
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -12,7 +14,7 @@ urlpatterns = patterns('',
 
     (r'^twilio_reply/$', parse_sms),
     (r'^$', homepage_splitter),
-    (r'^groups/(?P<group_name>[a-z]+)$', group_info),
+    (r'^groups/(?P<group_name>[0-9A-Za-z]+)$', group_info),
     (r'^login/$', 'django.contrib.auth.views.login'),
     (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 
@@ -27,7 +29,12 @@ urlpatterns = patterns('',
     # url(r'^admin/', include(admin.site.urls)),
 )
 
-#django.contrib.auth.views
+if settings.DEBUG:
+    urlpatterns += patterns('',
+        (r'^populate/$', populate),
+    )
+
+
 urlpatterns += patterns('django.contrib.auth.views',
     (r'^password_reset/$', 'password_reset', {}),
 

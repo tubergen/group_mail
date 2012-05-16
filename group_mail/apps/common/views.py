@@ -16,7 +16,8 @@ def landing_page(request):
 @login_required
 def logged_in_homepage(request):
     groups = request.user.memberships.all()
-    return ListView.as_view(template_name='group/list.html',
+    return ListView.as_view(
+            template_name='group/list.html',
             queryset=groups,
             context_object_name="group_list")(request)
 """

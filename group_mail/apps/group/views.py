@@ -1,12 +1,23 @@
-from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
-from django.contrib.auth.models import User
 from django.template import RequestContext
-from datetime import datetime
+from group_mail.apps.common.models import Group, CustomUser
 
 
 def group_info(request, group_name):
-    return HttpResponse('this group is named: ' + group_name)
+    group = Group.objects.get(name=group_name)
+    errors = []
+    if request.method == 'POST':
+        if not request.POST.get('removed_members'):
+            errors.append('No members were selected to be removed.')
+        if not errors:
+            for member_email in request.POST['removed_members']:
+                user = CustomUser.objects.get(member_email)
+                group.members.remove(user)
+
+    return render_to_response('group/info.html',
+            {'group': group,
+            'errors': errors},
+            context_instance=RequestContext(request))
 
 
 '''

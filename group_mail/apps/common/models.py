@@ -14,3 +14,6 @@ class Group(models.Model):
     code = models.CharField(max_length=MAX_LEN)
     members = models.ManyToManyField(CustomUser, related_name='memberships')
     admins = models.ManyToManyField(CustomUser)
+
+    def __unicode__(self):
+        return self.name

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{group.name}}{% endblock %}
+{% block pagetitle %}{{group.name}}{% endblock %}
+
+{% if errors %}
+<ul>
+  {% for error in erros %}
+  <li>{{ error }}</li>
+  {% endfor %}
+<ul>
+{% endif %}
+
+{% block content %}
+<form method=post" action="groups/{{group_name}}">
+  <input type="submit" value="Remove Members">
+  {% for member in group.members.all %}
+    <label class="span2">{{ member }}</label>
+    <input class="span2" type="checkbox" name="removed_members" value="{{member.email}}">
+  {% endfor %}
+</form>
+{% endblock %}
