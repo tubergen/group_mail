@@ -21,7 +21,7 @@ class CustomUser(User):
             raise Group.CodeInvalid()
 
         if group in self.memberships.all():
-            raise CustomUser.AlreadyMember(group_name)
+            raise CustomUser.AlreadyMember(self.email, group_name)
         else:
             # At this point, we suspect the join group cmd is valid
 
@@ -51,9 +51,6 @@ class CustomUser(User):
                 msg = 'A user with the %s %s already exists.' % (field, value)
             super(CustomUser._DuplicateField, self).__init__(msg)
 
-        def __str__(self):
-            return repr(self.msg)
-
     class DuplicatePhoneNumber(_DuplicateField):
         def __init__(self, msg=None, phone_number=''):
             super(CustomUser.DuplicatePhoneNumber, self).__init__(msg,
@@ -64,14 +61,11 @@ class CustomUser(User):
             super(CustomUser.DuplicateEmail, self).__init__(msg, 'email', email)
 
     class AlreadyMember(Exception):
-        def __init__(self, msg=None, group_name=''):
+        def __init__(self, msg=None, email='', group_name=''):
             if msg is None:
                 msg = 'The member %s is already a member of the group %s' % \
-                        (self.email, group_name)
+                        (email, group_name)
             super(CustomUser.AlreadyMember, self).__init__(msg)
-
-        def __str__(self):
-            return repr(self.msg)
 
 
 class Group(models.Model):
@@ -97,18 +91,12 @@ class Group(models.Model):
                 msg = 'Group %s already exists.' % name
             super(Group.AlreadyExists, self).__init__(msg)
 
-        def __str__(self):
-            return repr(self.msg)
-
     class _FieldTooLong(Exception):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
                 msg = 'The group %s %s is longer than %d characters.' % \
                         (field, value, Group.MAX_LEN)
             super(Group._FieldTooLong, self).__init__(msg)
-
-        def __str__(self):
-            return repr(self.msg)
 
     class NameTooLong(_FieldTooLong):
         def __init__(self, msg=None, name=''):
@@ -124,6 +112,3 @@ class Group(models.Model):
                 msg = 'The group code %s is invalid for the group %s' % \
                         (code, name)
             super(Group.CodeInvalid, self).__init__(msg)
-
-        def __str__(self):
-            return repr(self.msg)

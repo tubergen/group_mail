@@ -1,6 +1,6 @@
 from django.db import models
-from group_mail.apps.mailman import mailman_cmds
 from django.conf import settings
+from group_mail.apps.mailman import mailman_cmds
 
 
 class GroupManager(models.Manager):
