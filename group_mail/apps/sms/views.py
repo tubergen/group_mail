@@ -50,7 +50,6 @@ def parse_sms(request):
         cmd = COMMAND_CLASSES.get(sms_fields[0], Command)(sms_fields[0])
         return cmd.execute(from_number, sms_fields)
 
-    return HttpResponse('hello world')
     raise Http404
     """
 

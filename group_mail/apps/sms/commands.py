@@ -124,48 +124,29 @@ class CreateGroupCmd(Command):
         self.expected_sms_len = 3
         self.requires_user = True
 
-    def validate_length(self, text, text_name, max_len):
-        resp = None
-        if len(text) > max_len:
-            resp = "The %s '%s' is too long." % (text_name, text) + \
-                   " Please choose a %s less than %d characters and try again." % \
-                   (text_name, max_len)
-        return resp
+    def _respond_too_long(self, group_attribute, text):
+        return self.respond("The group %s '%s' is too long." % (group_attribute, text) + \
+                " Please choose a group %s less than %d characters and try again." % \
+                (group_attribute, Group.MAX_LEN))
 
     def execute_hook(self, sms_fields, user):
         #  ensure that the group and code specified by the user is valid
         group_name = sms_fields[1]
         group_code = sms_fields[2]
+        ###
         try:
-            group = Group.objects.get(name=group_name)
-            return self.respond('A group with the name %s ' % group_name +
-                    'already exists. Please choose a different name and try again.')
-        except Group.DoesNotExist:
-            resp = self.validate_length(group_name, 'name', Group.MAX_LEN)
-            if resp is not None:
-                return self.respond(resp)
-
-            resp = self.validate_length(group_code, 'code', Group.MAX_LEN)
-            if resp is not None:
-                return self.respond(resp)
-
-            # At this point, we suspect the group creation is valid
-
-            # Try creating the mailman list first, since this is the last place
-            # we expect something might go wrong
-            if self.modify_mailman_db:
-                errors = mailman_cmds.newlist(group_name, user.email, group_code)
-                if errors:
-                    return self.respond(self.truncate(', '.join(errors), MAX_SMS_LEN))
-
-            group = Group.objects.create(name=group_name,
-                                         code=group_code)
-
-            group.members.add(user)
-            group.admins.add(user)
-
+            Group.objects.create_group(user, group_name, group_code)
             return self.respond("Success! The group '%s' has been created." % group_name + \
                     ' Have members text #join (group name) (group code) to join.')
+        except Group.AlreadyExists:
+            return self.respond('A group with the name %s ' % group_name +
+                    'already exists. Please choose a different name and try again.')
+        except Group.NameTooLong:
+            return self._respond_too_long('name', group_name)
+        except Group.CodeTooLong:
+            return self._respond_too_long('code', group_code)
+        except mailman_cmds.MailmanError as e:
+            return self.respond(str(e))
 
 
 class JoinGroupCmd(Command):

@@ -3,6 +3,7 @@ import os.path  # used to make paths generic
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+MODIFY_MAILMAN_DB = not DEBUG
 PROJECT_DIR = os.path.dirname(__file__)
 
 ADMINS = (

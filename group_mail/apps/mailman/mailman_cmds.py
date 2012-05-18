@@ -1,3 +1,6 @@
+#### As of 5/17, newlist may not work. It's untested since we changed the error
+#### surfacing mechanism
+
 """ Provides wrappers for the necessary mailman commands. """
 
 import sys
@@ -18,7 +21,8 @@ def newlist(list_name, owner_email, list_password):
         errors = add_members(list_name, owner_email)
         if not errors:
             add_postfix_mysql_alias(list_name)
-    return errors
+    else:
+        raise MailmanError(errors)
 
 
 def remove_members(list_name, members):
@@ -55,6 +59,18 @@ def rmlist(list_name):
 
 ##########################################################################
 
+
+class MailmanError(Exception):
+    """ Generic Mailman Error """
+    def __init__(self, errors=None):
+        if not errors:
+            msg = 'Error with mailman command.'
+        else:
+            msg = '\n'.join(errors)
+        super(MailmanError, self).__init__(msg)
+
+    def __str__(self):
+        return repr(self.msg)
 
 ##########################################################################
 """ Private helper functions """
