@@ -133,32 +133,18 @@ class JoinGroupCmd(Command):
         self.requires_user = True
 
     def execute_hook(self, sms_fields, user):
-        #  ensure that the group and code specified by the user is valid
         group_name = sms_fields[1]
-        group_code = sms_fields[2]
         try:
-            group = Group.objects.get(name=group_name)
+            user.join_group(group_name, group_code=sms_fields[2])
         except Group.DoesNotExist:
             return self.respond("The group '%s' does not exist." % group_name)
-
-        if group_code != group.code:
+        except Group.CodeInvalid:
             return self.respond("The group code you entered is not correct"
                     " for the group '%s.'" % group_name)
-
-        if user in group.members.all():
+        except CustomUser.AlreadyMember:
             return self.respond("You're already a member of the group '%s.'" % group_name)
-        else:
-            # At this point, we suspect the join group cmd is valid
 
-            # Try modifying the mailman list first, since this is the last place
-            # we expect something might go wrong
-            if self.modify_mailman_db:
-                errors = mailman_cmds.add_members(group_name, user.email)
-                if errors:
-                    return self.respond(self.truncate(', '.join(errors), MAX_SMS_LEN))
-
-            group.members.add(user)
-            return self.respond("Success! You've been added to the group '%s.'" % group_name)
+        return self.respond("Success! You've been added to the group '%s.'" % group_name)
 
 
 class NewUserCmd(Command):

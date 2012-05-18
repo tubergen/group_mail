@@ -8,9 +8,6 @@ import subprocess
 import MySQLdb
 from django.conf import settings
 
-##########################################################################
-"""All of the following functions return a list of errors as strings."""
-
 
 def newlist(list_name, owner_email, list_password):
     args = [_get_script_dir('newlist'), list_name, owner_email, list_password]
@@ -32,7 +29,9 @@ def remove_members(list_name, members):
     """
     members = list(members)  # in case members is a single string
     args = ['remove_members', list_name] + members
-    return _exec_cmd(*args)
+    errors = _exec_cmd(*args)
+    if errors:
+        raise MailmanError(errors)
 
 
 def add_members(list_name, members):
@@ -41,7 +40,9 @@ def add_members(list_name, members):
     list_name. e.g.: 'brian@gmail.com\nellie@gmail.com\nanne@gmail.com'
     """
     args = [_get_script_dir('add_members'), '-r', '-', list_name]
-    return _exec_cmd(*args, stdin_hook=members)
+    errors = _exec_cmd(*args, stdin_hook=members)
+    if errors:
+        raise MailmanError(errors)
 
 
 def dumpdb(list_name):
@@ -50,14 +51,16 @@ def dumpdb(list_name):
     for use in production.
     """
     args = [_get_script_dir('dumpdb'), _get_list_dir(list_name) + '/config.pck']
-    return _exec_cmd(*args)
+    errors = _exec_cmd(*args)
+    if errors:
+        raise MailmanError(errors)
 
 
 def rmlist(list_name):
     args = [_get_script_dir('rmlist'), '-a', _get_list_dir(list_name)]
-    return _exec_cmd(*args)
-
-##########################################################################
+    errors = _exec_cmd(*args)
+    if errors:
+        raise MailmanError(errors)
 
 
 class MailmanError(Exception):

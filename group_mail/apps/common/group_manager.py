@@ -4,30 +4,19 @@ from django.conf import settings
 
 
 class GroupManager(models.Manager):
-
-    def validate_length(self, text, text_name, max_len):
-        resp = None
-        if len(text) > max_len:
-            resp = "The %s '%s' is too long." % (text_name, text) + \
-                   " Please choose a %s less than %d characters and try again." % \
-                   (text_name, max_len)
-        return resp
-
     def create_group(self, creator, group_name, group_code):
         # we do the import here to avoid a circular dependency
         from group_mail.apps.common.models import Group
 
         try:
             group = Group.objects.get(name=group_name)
-            raise Group.AlreadyExists()
+            raise Group.AlreadyExists(name=group_name)
         except Group.DoesNotExist:
-            resp = self.validate_length(group_name, 'name', Group.MAX_LEN)
-            if resp is not None:
-                raise Group.NameTooLong()
+            if len(group_name) > Group.MAX_LEN:
+                raise Group.NameTooLong(name=group_name)
 
-            resp = self.validate_length(group_code, 'code', Group.MAX_LEN)
-            if resp is not None:
-                raise Group.CodeTooLong()
+            if len(group_code) > Group.MAX_LEN:
+                raise Group.CodeTooLong(code=group_code)
 
             # At this point, we suspect the group creation is valid
 

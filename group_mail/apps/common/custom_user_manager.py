@@ -28,12 +28,13 @@ class CustomUserManager(UserManager):
         # we do the import here to avoid a circular dependency
         from group_mail.apps.common.models import CustomUser
 
-        # validate the phone number provided is unique to the new user
-        try:
-            user = CustomUser.objects.get(phone_number=phone_number)
-            raise CustomUser.DuplicatePhoneNumber()
-        except CustomUser.DoesNotExist:
-            pass
+        if phone_number:
+            # validate the phone number provided is unique to the new user
+            try:
+                user = CustomUser.objects.get(phone_number=phone_number)
+                raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
+            except CustomUser.DoesNotExist:
+                pass
 
         # validate the email
         try:
@@ -44,7 +45,7 @@ class CustomUserManager(UserManager):
         # validate the email provided is unique to the new user
         try:
             CustomUser.objects.get(email=email)
-            raise CustomUser.DuplicateEmail()
+            raise CustomUser.DuplicateEmail(email=email)
         except CustomUser.DoesNotExist:
             user = super(CustomUserManager, self).create_user(
                     username=email,
