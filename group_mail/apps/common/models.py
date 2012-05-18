@@ -35,6 +35,14 @@ class CustomUser(User):
 
             self.memberships.add(group)
 
+    def leave_group(self, group):
+        self.memberships.remove(group)
+        if settings.MODIFY_MAILMAN_DB:
+            try:
+                mailman_cmds.remove_members(group.name, self.email)
+            except mailman_cmds.MailmanError:
+                raise
+
     """ Custom Exceptions """
 
     class _DuplicateField(Exception):
@@ -77,6 +85,9 @@ class Group(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def remove_member(self, user):
+        user.leave_group(self)
 
     """ Custom Exceptions """
 

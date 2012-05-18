@@ -28,7 +28,7 @@ def group_info(request, group_name):
                     user = CustomUser.objects.get(email=member_email)
                 except CustomUser.DoesNotExist:
                     user = None
-                group.members.remove(user)
+                group.remove_member(user)
 
             return render_to_response('group/member_removed.html',
                     {'group': group,
