@@ -1,12 +1,30 @@
 from django.db import models
-from django.contrib.auth.models import User, UserManager
-from group_mail.apps.common.GroupManager import GroupManager
+from django.contrib.auth.models import User
+from group_mail.apps.common.group_manager import GroupManager
+from group_mail.apps.common.custom_user_manager import CustomUserManager
 
 
 class CustomUser(User):
     phone_number = models.CharField(max_length=20)
 
-    objects = UserManager()
+    objects = CustomUserManager()
+
+    class _DuplicateField(Exception):
+        def __init__(self, msg=None, field='field unspecified'):
+            if msg is None:
+                msg = 'A user with the specified %s already exists.' % field
+            super(CustomUser._DuplicateField, self).__init__(msg)
+
+        def __str__(self):
+            return repr(self.msg)
+
+    class DuplicatePhoneNumber(_DuplicateField):
+        def __init__(self, msg=None):
+            super(CustomUser.DuplicatePhoneNumber, self).__init__(msg, 'phone number')
+
+    class DuplicateEmail(_DuplicateField):
+        def __init__(self, msg=None):
+            super(CustomUser.DuplicateEmail, self).__init__(msg, 'email')
 
 
 class Group(models.Model):
@@ -46,12 +64,6 @@ class Group(models.Model):
         def __init__(self, msg=None):
             super(Group.NameTooLong, self).__init__(msg, 'name')
 
-        def __str__(self):
-            return repr(self.msg)
-
     class CodeTooLong(_FieldTooLong):
         def __init__(self, msg=None):
             super(Group.CodeTooLong, self).__init__(msg, 'code')
-
-        def __str__(self):
-            return repr(self.msg)

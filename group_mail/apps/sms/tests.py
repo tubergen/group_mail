@@ -52,9 +52,18 @@ class ParseSMSTest(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class NewUserCmdTest(TestCase):
-
+class _CmdTestCase(TestCase):
     def setUp(self):
+        self.old_modify = settings.MODIFY_MAILMAN_DB
+        settings.MODIFY_MAILMAN_DB = False
+
+    def tearDown(self):
+        settings.MODIFY_MAILMAN_DB = True
+
+
+class NewUserCmdTest(_CmdTestCase):
+    def setUp(self):
+        super(NewUserCmdTest, self).setUp()
         self.sms_fields = ['#user', 'myemail@gmail.com', 'firstname', 'lastname1 lastname2']
         self.from_number = '0123456789'
         self.cmd = NewUserCmd(self.sms_fields[0], False)
@@ -108,9 +117,9 @@ class NewUserCmdTest(TestCase):
         self.assertTrue(len(users) == 1, 'There exists two users with the same phone number')
 
 
-class CreateGroupCmdTest(TestCase):
-
+class CreateGroupCmdTest(_CmdTestCase):
     def setUp(self):
+        super(CreateGroupCmdTest, self).setUp()
         self.sms_fields = ['#create', 'group_name', 'group_code']
         self.user = create_test_user('email@gmail.com')
         self.cmd = CreateGroupCmd(self.sms_fields[0], False)
@@ -166,9 +175,9 @@ class CreateGroupCmdTest(TestCase):
         self.assertTrue(len(groups) == 1, 'There exists two groups with the same name')
 
 
-class JoinGroupCmdTest(TestCase):
-
+class JoinGroupCmdTest(_CmdTestCase):
     def setUp(self):
+        super(JoinGroupCmdTest, self).setUp()
         number = '0123456789'
         self.group_creator = create_test_user('email@gmail.com', phone_number=number)
         self.user = create_test_user('email2@gmail.com', phone_number=number[::-1])

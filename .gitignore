@@ -38,3 +38,8 @@ Thumbs.db
 ##########################
 *~
 *\.swp
+
+# Not sure what filetype #
+##########################
+*.swo
+*.ropeproject*

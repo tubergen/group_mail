@@ -1,10 +1,8 @@
 from twilio.twiml import Response
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from group_mail.apps.common.models import CustomUser, Group
 #  from django.http import HttpResponse
 from group_mail.apps.mailman import mailman_cmds
-from django.contrib.auth.forms import PasswordResetForm
 
 MAX_SMS_LEN = 160
 
@@ -34,30 +32,6 @@ class Utilities(object):
             else:
                 text = text[:max_len]
         return text
-
-    def check_email(self, email):
-        """ Returns None if the email is valid. Returns an error string otherwise. """
-        resp = None
-        try:
-            validate_email(email)
-        except ValidationError:
-            resp = 'The email %s appears to be invalid. Please try again.' % email
-        return resp
-
-    def send_welcome_email(request, to_email):
-        try:
-            validate_email(to_email)
-        except ValidationError:
-            raise
-
-        # use the password reset form to send the welcome email
-        form = PasswordResetForm({'email': to_email})
-        if form.is_valid():
-            opts = {
-                'email_template_name': 'registration/welcome_email.html',
-                'subject_template_name': 'registration/welcome_subject.txt',
-            }
-            form.save(**opts)
 
 
 class Command(Utilities):
@@ -201,34 +175,26 @@ class NewUserCmd(Command):
         assert isinstance(from_number, str) or isinstance(from_number, unicode), \
             "from_number should be a string"
 
-        if self.get_user(from_number) is not None:
+        email = sms_fields[1]
+        try:
+            CustomUser.objects.create_user(
+                    email,
+                    first_name=self.truncate(sms_fields[2], 30, False),
+                    last_name=self.truncate(' '.join(sms_fields[3:]), 30, False),
+                    phone_number=from_number)
+        except CustomUser.DuplicatePhoneNumber:
             return self.respond('There is already an account for this phone number.'
                     ' Text %s if you want to change the email for this number.' % \
                     USAGE[ChangeEmailCmd.CMD_STR])
-
-        email = sms_fields[1]
-        resp = self.check_email(email)
-        if resp is not None:
-            return self.respond(resp)
-
-        try:
-            CustomUser.objects.get(email=email)
+        except ValidationError:
+            return self.respond('The email %s appears to be invalid. Please try again.' % email)
+        except CustomUser.DuplicateEmail:
             return self.respond("There is already an account with this email. If the"
                     " account is your's, text %s to update the phone number for that account." % \
                     USAGE[ChangeNumberCmd.CMD_STR])
 
-        except CustomUser.DoesNotExist:
-            CustomUser.objects.create(
-                    username=email,
-                    first_name=self.truncate(sms_fields[2], 30, False),
-                    last_name=self.truncate(' '.join(sms_fields[3:]), 30, False),
-                    email=email,
-                    phone_number=from_number)
-
-            self.send_welcome_email(email)
-
-            return self.respond("Success! We've created an account for you and sent you a"
-                    " welcome email. You can now #join and #create groups.")
+        return self.respond("Success! We've created an account for you and sent you a"
+                " welcome email. You can now #join and #create groups.")
 
 
 class ChangeNumberCmd(Command):
