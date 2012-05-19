@@ -66,7 +66,7 @@ class NewUserCmdTest(_CmdTestCase):
         super(NewUserCmdTest, self).setUp()
         self.sms_fields = ['#user', 'myemail@gmail.com', 'firstname', 'lastname1 lastname2']
         self.from_number = '0123456789'
-        self.cmd = NewUserCmd(self.sms_fields[0], False)
+        self.cmd = NewUserCmd(self.sms_fields[0])
 
     def test_valid_new_user_cmd(self):
         response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
@@ -122,7 +122,7 @@ class CreateGroupCmdTest(_CmdTestCase):
         super(CreateGroupCmdTest, self).setUp()
         self.sms_fields = ['#create', 'group_name', 'group_code']
         self.user = create_test_user('email@gmail.com')
-        self.cmd = CreateGroupCmd(self.sms_fields[0], False)
+        self.cmd = CreateGroupCmd(self.sms_fields[0])
 
     def test_valid_create_group_cmd(self):
         response = str(self.cmd.execute_hook(self.sms_fields, self.user))
@@ -183,7 +183,7 @@ class JoinGroupCmdTest(_CmdTestCase):
         self.user = create_test_user('email2@gmail.com', phone_number=number[::-1])
         self.sms_fields = ['#join', 'group_name', 'group_code']
         self.group = create_test_group(self.group_creator, self.sms_fields[1], self.sms_fields[2])
-        self.cmd = JoinGroupCmd(self.sms_fields[0], False)
+        self.cmd = JoinGroupCmd(self.sms_fields[0])
 
     def test_valid_join_group_cmd(self):
         response = str(self.cmd.execute_hook(self.sms_fields, self.user))

@@ -37,12 +37,11 @@ class Utilities(object):
 class Command(Utilities):
     USAGE = None
 
-    def __init__(self, cmd='', modify_mailman_db=True):
+    def __init__(self, cmd=''):
         self.requires_user = False
         self.expected_sms_len = None
         self.min_sms_len = None
         self.cmd = cmd
-        self.modify_mailman_db = modify_mailman_db
 
     def get_user(self, from_number):
         try:
@@ -93,8 +92,8 @@ class CreateGroupCmd(Command):
     CMD_STR = '#create'
     USAGE = USAGE[CMD_STR]
 
-    def __init__(self, cmd=CMD_STR, modify_mailman_db=True):
-        super(CreateGroupCmd, self).__init__(cmd, modify_mailman_db)
+    def __init__(self, cmd=CMD_STR):
+        super(CreateGroupCmd, self).__init__(cmd)
         self.expected_sms_len = 3
         self.requires_user = True
 
@@ -127,8 +126,8 @@ class JoinGroupCmd(Command):
     CMD_STR = '#user'
     USAGE = USAGE[CMD_STR]
 
-    def __init__(self, cmd=CMD_STR, modify_mailman_db=True):
-        super(JoinGroupCmd, self).__init__(cmd, modify_mailman_db)
+    def __init__(self, cmd=CMD_STR):
+        super(JoinGroupCmd, self).__init__(cmd)
         self.expected_sms_len = 3
         self.requires_user = True
 
@@ -151,8 +150,8 @@ class NewUserCmd(Command):
     CMD_STR = '#user'
     USAGE = USAGE[CMD_STR]
 
-    def __init__(self, cmd=CMD_STR, modify_mailman_db=True):
-        super(NewUserCmd, self).__init__(cmd, modify_mailman_db)
+    def __init__(self, cmd=CMD_STR):
+        super(NewUserCmd, self).__init__(cmd)
         self.min_sms_len = 4
         self.requires_user = False
 
