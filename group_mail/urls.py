@@ -3,7 +3,7 @@ from django.conf.urls import patterns
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
 from group_mail.apps.common.views import homepage_splitter
-from group_mail.apps.group.views import group_info
+from group_mail.apps.group.views import group_info, create_group
 from group_mail.apps.populate_db.views import populate
 
 # Uncomment the next two lines to enable the admin:
@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     (r'^twilio_reply/$', parse_sms),
     (r'^$', homepage_splitter),
     (r'^group/(?P<group_name>[0-9A-Za-z]+)$', group_info),
+    (r'^create-group/', create_group),
     (r'^login/$', 'django.contrib.auth.views.login'),
     (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 
@@ -36,9 +37,9 @@ if settings.DEBUG:
 
 
 urlpatterns += patterns('django.contrib.auth.views',
-    (r'^password_reset/$', 'password_reset', {}),
+    (r'^password-reset/$', 'password_reset', {}),
 
-    (r'^password_reset/done/$', 'password_reset_done', {}),
+    (r'^password-reset/done/$', 'password_reset_done', {}),
 
     (r'^reset/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$', 'password_reset_confirm', {}),
     #    {'post_reset_redirect': 'accounts/login/',

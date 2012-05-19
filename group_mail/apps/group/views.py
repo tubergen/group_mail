@@ -2,8 +2,11 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from group_mail.apps.common.models import Group, CustomUser
 from django.http import HttpResponseRedirect
+from group_mail.apps.group.forms import CreateGroupForm
+from django.contrib.auth.decorators import login_required
 
 
+@login_required
 def group_info(request, group_name):
     try:
         group = Group.objects.get(name=group_name)
@@ -42,33 +45,19 @@ def group_info(request, group_name):
             context_instance=RequestContext(request))
 
 
-'''
+@login_required
 def create_group(request):
     if request.method == 'POST':
-        form = EventCreationForm(request.POST)
+        form = CreateGroupForm(request.POST)
         if form.is_valid():
-            """ create a group in mailman and on server """
-            """ if email is new, create a new user """
-            """ change behavior slightly if user is logged in """
-            """ the below code is garbage """
-            e = Event()
-            e.title = form.cleaned_data['title']
-            e.description = form.cleaned_data['description']
-            e.location = form.cleaned_data['location']
-            e.date = datetime.combine(form.cleaned_data['date'],
-                                      form.cleaned_data['time'])
-            if False:  # temporary until we have accounts
-                e.user = request.user
-            else:
-                u = User(username=e.title)
-                u.save()
-                e.creator = u
-            e.save()
-            return HttpResponseRedirect('/submit/thanks/')
+            group_name = form.cleaned_data['group_name']
+            # no need to except here, since clean_ methods should validate data
+            Group.objects.create_group(request.user, group_name,
+                    form.cleaned_data['group_code'])
+            return HttpResponseRedirect('/group/%s' % group_name)
     else:
-        form = EventCreationForm()
+        form = CreateGroupForm()
 
     return render_to_response('group/create.html',
-                              {'form': form},
+                              {'create_group_form': form},
                               RequestContext(request))
-'''
