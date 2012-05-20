@@ -13,19 +13,15 @@ def populate(request):
         name = 'user%d' % i
         email = '%s@gmail.com' % name
         # phone_number = '703555333%d' % i
-        u = CustomUser.objects.create_user(email, email, password)
-        u.first_name = '%s_first_name' % name
-        u.last_name = '%s_last_name' % name
-        u.save()
+        CustomUser.objects.create_user(email, password,
+                '%s_first_name' % name, '%s_last_name' % name)
 
     users = CustomUser.objects.all()
     for i in xrange(0, num_groups):
         group_name = 'group%d' % i
         group_code = 'group_code%d' % i
-        group = Group.objects.create(name=group_name,
-                                     code=group_code)
+        group = Group.objects.create_group(users[i], group_name, group_code)
         group.members.add(*users)
-        group.admins.add(users[i])
 
     groups = Group.objects.all()
     resp = 'Created users...<br>'

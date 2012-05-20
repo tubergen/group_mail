@@ -1,20 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Create Group{% endblock %}
-{% block pagetitle %}Create Group{% endblock %}
-{% block content %}
+{% block title %}Create an account{% endblock %}
 
+{% block pagetitle %}Create an account{% endblock %}
+
+{% block content %}
 <form method="post" action="">
 {% csrf_token %}
 
-  {% for field in create_group_form %}
+  {% for field in form %}
   <div class="submit-field">
     {{ field.label_tag }}
     {{ field }}
     <span class="help-inline">{{ field.errors }}</span>
   </div>
   {% endfor %}
-
 <input type="submit" value="Create" />
-</form>
-
 {% endblock %}

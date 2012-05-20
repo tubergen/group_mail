@@ -5,6 +5,8 @@ from group_mail.apps.sms.views import parse_sms
 from group_mail.apps.common.views import homepage_splitter
 from group_mail.apps.group.views import group_info, create_group
 from group_mail.apps.populate_db.views import populate
+from group_mail.apps.registration.views import register, register_thanks
+
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -15,7 +17,9 @@ urlpatterns = patterns('',
     (r'^twilio_reply/$', parse_sms),
     (r'^$', homepage_splitter),
     (r'^group/(?P<group_name>[0-9A-Za-z]+)$', group_info),
-    (r'^create-group/', create_group),
+    (r'^create/group/$', create_group),
+    (r'^register/$', register),
+    (r'^register/thanks/$', register_thanks),
     (r'^login/$', 'django.contrib.auth.views.login'),
     (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 

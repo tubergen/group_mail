@@ -7,7 +7,8 @@ from group_mail.apps.mailman import mailman_cmds
 
 
 class CustomUser(User):
-    phone_number = models.CharField(max_length=20)
+    MAX_LEN = 128  # max length of email, password
+    phone_number = models.CharField(max_length=20, blank=True)
 
     objects = CustomUserManager()
 
@@ -69,7 +70,7 @@ class CustomUser(User):
 
 
 class Group(models.Model):
-    MAX_LEN = 20
+    MAX_LEN = 20  # max length of group name, code
     name = models.CharField(max_length=MAX_LEN, unique=True)
     code = models.CharField(max_length=MAX_LEN)
     members = models.ManyToManyField(CustomUser, related_name='memberships')

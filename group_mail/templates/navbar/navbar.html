@@ -6,7 +6,9 @@
     <div class="container">
       <a class="brand" href="/">Group Mail</a>
       <ul class="nav">
-        <li><a href="/login/">Placeholder</a></li>
+        {% if not user.is_authenticated %}
+        <li><a href="/register/">Sign Up</a></li>
+        {% endif %}
       </ul>
       <div class="actions">
         {% if not user.is_authenticated %}

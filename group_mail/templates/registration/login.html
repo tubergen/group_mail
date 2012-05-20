@@ -10,12 +10,12 @@
 <form method="post" action="{% url django.contrib.auth.views.login %}">
 {% csrf_token %}
 
-  <div class="submit-event-field">
-    <label for="id_title">Username</label>
+  <div class="submit-field">
+    <label for="id_username">Email</label>
     {{ form.username }}
     <span class="help-inline">{{ form.username.errors }}</span>
   </div>
-  <div class="submit-event-field">
+  <div class="submit-field">
     <label for="id_password">Password</label>
     {{ form.password }}
     <span class="help-inline">{{ form.password.errors }}</span> 

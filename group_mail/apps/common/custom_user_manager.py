@@ -51,9 +51,12 @@ class CustomUserManager(UserManager):
                     username=email,
                     email=email,
                     password=password)
-            user.first_name = first_name
-            user.last_name = last_name
-            user.phone_number = phone_number
+            if first_name:
+                user.first_name = first_name
+            if last_name:
+                user.last_name = last_name
+            if phone_number:
+                user.phone_number = phone_number
             user.save()
 
             self.send_welcome_email(email)
