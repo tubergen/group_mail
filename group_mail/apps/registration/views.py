@@ -13,7 +13,8 @@ def register(request):
             CustomUser.objects.create_user(
                     email=form.cleaned_data['email'],
                     first_name=form.cleaned_data['first_name'],
-                    last_name=form.cleaned_data['last_name'])
+                    last_name=form.cleaned_data['last_name'],
+                    phone_number=form.cleaned_data['phone_number'])
             return HttpResponseRedirect("/register/thanks/")
     else:
         form = CreateUserForm()
