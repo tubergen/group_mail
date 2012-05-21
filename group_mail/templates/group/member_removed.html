@@ -5,7 +5,9 @@
 
 {% block content %}
 
-<p>Successfully removed {{ member.email }} from {{ group.name }}.</p>
+{% for email in removed_member_emails %}
+  <p>Successfully removed {{ email }} from {{ group.name }}.</p>
+{% endfor %}
 <a href="/group/{{ group.name }}">Return</a>
 
 {% endblock %}

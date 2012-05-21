@@ -1,5 +1,6 @@
 from django import forms
 from group_mail.apps.common.models import Group
+from group_mail.apps.group.fields import MultiEmailField
 
 
 class CreateGroupForm(forms.Form):
@@ -36,3 +37,13 @@ class CreateGroupNavbarForm(CreateGroupForm):
             widget=forms.TextInput(attrs={
                 'class': 'input-small',
                 'placeholder': 'Group code'}))
+
+
+class AddMembersForm(forms.Form):
+    emails = MultiEmailField(
+            error_messages={'required': "You didn't enter any emails."},
+            widget=forms.Textarea(attrs={
+                'class': 'input-xlarge',
+                'rows': '3',
+                'placeholder': 'brian@gmail.com, anne@gmail.com, ellie@gmail.com'})
+            )

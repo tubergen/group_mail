@@ -18,7 +18,7 @@ class CreateUserForm(forms.Form):
         error_messages={'invalid': name_invalid})
     phone_number = forms.RegexField(max_length=30, regex=r"^[\d.'-]+$",
         help_text=phone_number_help,
-        error_messages={'invalid': "This field may only contain numbers.",
+        error_messages={'invalid': 'This field may only contain numbers.',
             'required': 'This field is required. %s' % phone_number_help})
 
     def clean_email(self):

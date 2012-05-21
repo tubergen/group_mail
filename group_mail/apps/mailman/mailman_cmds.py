@@ -1,5 +1,6 @@
 #### As of 5/17, newlist may not work. It's untested since we changed the error
 #### surfacing mechanism
+### 5/21 note: this may apply to all commands.
 
 """ Provides wrappers for the necessary mailman commands. """
 
@@ -36,9 +37,14 @@ def remove_members(list_name, members):
 
 def add_members(list_name, members):
     """
-    members should be a newline-delimited string of emails to add to
-    list_name. e.g.: 'brian@gmail.com\nellie@gmail.com\nanne@gmail.com'
+    members should be a list or newline-delimited string of emails to add
+    to list_name. e.g.: 'brian@gmail.com\nellie@gmail.com\nanne@gmail.com'
     """
+    if isinstance(members, list):
+        members = '\n'.join(members)
+    elif not isinstance(members, basestring):
+        raise TypeError('members must be a list or string')
+
     args = [_get_script_dir('add_members'), '-r', '-', list_name]
     errors = _exec_cmd(*args, stdin_hook=members)
     if errors:

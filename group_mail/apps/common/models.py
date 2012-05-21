@@ -37,12 +37,7 @@ class CustomUser(User):
             self.memberships.add(group)
 
     def leave_group(self, group):
-        self.memberships.remove(group)
-        if settings.MODIFY_MAILMAN_DB:
-            try:
-                mailman_cmds.remove_members(group.name, self.email)
-            except mailman_cmds.MailmanError:
-                raise
+        group.remove_members([self])
 
     """ Custom Exceptions """
 
@@ -81,8 +76,34 @@ class Group(models.Model):
     def __unicode__(self):
         return self.name
 
-    def remove_member(self, user):
-        user.leave_group(self)
+    def remove_members(self, member_email_list):
+        for email in member_email_list:
+            try:
+                member = CustomUser.objects.get(email=email)
+                self.members.remove(member)
+            except CustomUser.DoesNotExist:
+                pass
+
+        if settings.MODIFY_MAILMAN_DB:
+            try:
+                mailman_cmds.remove_members(self.name, member_email_list)
+            except mailman_cmds.MailmanError:
+                raise
+
+    def add_members(self, member_email_list):
+        for email in member_email_list:
+            try:
+                member = CustomUser.objects.get(email=email)
+            except CustomUser.DoesNotExist:
+                # create an account for the new user
+                member = CustomUser.objects.create_user(email=email)
+            self.members.add(member)
+
+        if settings.MODIFY_MAILMAN_DB:
+            try:
+                mailman_cmds.add_members(self.name, member_email_list)
+            except mailman_cmds.MailmanError:
+                raise
 
     """ Custom Exceptions """
 

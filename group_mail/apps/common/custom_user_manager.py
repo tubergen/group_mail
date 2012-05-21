@@ -25,6 +25,8 @@ class CustomUserManager(UserManager):
 
     def create_user(self, email, password=None, first_name=None, \
             last_name=None, phone_number=None):
+        """ Creates a CustomUser with the values given by the parameters and returns
+            the CustomUser if successful."""
         # we do the import here to avoid a circular dependency
         from group_mail.apps.common.models import CustomUser
 
@@ -58,5 +60,5 @@ class CustomUserManager(UserManager):
             if phone_number:
                 user.phone_number = phone_number
             user.save()
-
             self.send_welcome_email(email)
+            return user

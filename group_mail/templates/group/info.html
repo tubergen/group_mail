@@ -6,11 +6,13 @@
 {% block content %}
 <div class="well">
   {% if errors %}
-  <ul>
-    {% for error in errors %}
-    <li>{{ error }}</li>
-    {% endfor %}
-  </ul>
+  <div class='error-list'>
+    <ul>
+      {% for error in errors %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
   {% endif %}
 
   <form method="post" action="">
@@ -20,11 +22,26 @@
     <div>
       <label class="checkbox">
         <input type="checkbox" name="removed_members" value="{{ member.email }}">
-        <span class="span4">{{ member.get_full_name }}</span>
-        <span>{{ member.email }}</span>
+        <span class="span4">{{ member.get_full_name }}&nbsp;</span>
+        <span>{{ member.email }}&nbsp;</span>
       </label>
     </div>
     {% endfor %}
+    <input type="hidden" name="remove_members_submit" value="true">
+  </form>
+
+  <div class='error-list'>
+    {{ add_members_form.emails.errors }}
+  </div>
+
+  <form method="post" action="">
+    {% csrf_token %}
+    <label for="id_emails">
+      Enter member email addresses (separted by commas, spaces, or newlines):
+    </label>
+    {{ add_members_form.emails }}
+    <input type="hidden" name="add_members_submit" value="true">
+    <input type="submit" value="Add Members">
   </form>
 </div>
 {% endblock %}

@@ -1,8 +1,8 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from group_mail.apps.common.models import Group, CustomUser
+from group_mail.apps.common.models import Group
 from django.http import HttpResponseRedirect
-from group_mail.apps.group.forms import CreateGroupForm
+from group_mail.apps.group.forms import CreateGroupForm, AddMembersForm
 from django.contrib.auth.decorators import login_required
 
 
@@ -17,31 +17,39 @@ def group_info(request, group_name):
         return HttpResponseRedirect('/')
 
     errors = []
+    add_members_form = AddMembersForm()
     if request.method == 'POST':
-        if not request.POST.get('removed_members'):
-            errors.append('No members were selected to be removed.')
-        """
-        # unclear whether we want to restrict user removal to admins
-        if not request.user in group.admins.all():
-            errors.append('Must be a group admin to remove members.')
-        """
-        if not errors:
-            for member_email in request.POST.getlist('removed_members'):
-                try:
-                    user = CustomUser.objects.get(email=member_email)
-                except CustomUser.DoesNotExist:
-                    user = None
-                group.remove_member(user)
+        if request.POST.get('remove_members_submit'):
+            if not request.POST.get('removed_members'):
+                errors.append('No members were selected to be removed.')
+            """
+            # unclear whether we want to restrict user removal to admins
+            if not request.user in group.admins.all():
+                errors.append('Must be a group admin to remove members.')
+            """
+            if not errors:
+                removed_member_emails = request.POST.getlist('removed_members')
+                group.remove_members(removed_member_emails)
 
-            return render_to_response('group/member_removed.html',
-                    {'group': group,
-                    'member': user,
-                    'errors': errors},
-                    context_instance=RequestContext(request))
+                return render_to_response('group/member_removed.html',
+                        {'group': group,
+                        'removed_member_emails': removed_member_emails,
+                        'errors': errors},
+                        context_instance=RequestContext(request))
+        elif request.POST.get('add_members_submit'):
+            add_members_form = AddMembersForm(request.POST)
+            if add_members_form.is_valid():
+                group.add_members(add_members_form.cleaned_data['emails'])
+                return render_to_response('group/member_removed.html',
+                        {'group': group,
+                        'removed_member_emails': [],
+                        'errors': errors},
+                        context_instance=RequestContext(request))
 
     return render_to_response('group/info.html',
             {'group': group,
-            'errors': errors},
+            'errors': errors,
+            'add_members_form': add_members_form},
             context_instance=RequestContext(request))
 
 
