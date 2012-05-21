@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Member Added{% endblock %}
+{% block pagetitle %}Member Added{% endblock %}
+
+{% block content %}
+
+{% for email in added_member_emails %}
+  <p>Successfully added {{ email }} to {{ group.name }}.</p>
+{% endfor %}
+<a href="/group/{{ group.name }}">Return</a>
+
+{% endblock %}

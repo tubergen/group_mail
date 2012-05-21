@@ -39,10 +39,11 @@ def group_info(request, group_name):
         elif request.POST.get('add_members_submit'):
             add_members_form = AddMembersForm(request.POST)
             if add_members_form.is_valid():
-                group.add_members(add_members_form.cleaned_data['emails'])
-                return render_to_response('group/member_removed.html',
+                added_member_emails = add_members_form.cleaned_data['emails']
+                group.add_members(added_member_emails)
+                return render_to_response('group/member_added.html',
                         {'group': group,
-                        'removed_member_emails': [],
+                        'added_member_emails': added_member_emails,
                         'errors': errors},
                         context_instance=RequestContext(request))
 
