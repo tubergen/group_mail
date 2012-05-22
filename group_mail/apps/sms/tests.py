@@ -116,6 +116,13 @@ class NewUserCmdTest(_CmdTestCase):
         users = CustomUser.objects.all()
         self.assertTrue(len(users) == 1, 'There exists two users with the same phone number')
 
+    def test_incomplete_user(self):
+        # create an incomplete user in the db
+        CustomUser.objects.create_user(email=self.sms_fields[1])
+
+        # now complete that user, ensuring that nothing goes wrong
+        self.test_valid_new_user_cmd()
+
 
 class CreateGroupCmdTest(_CmdTestCase):
     def setUp(self):

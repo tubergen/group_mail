@@ -39,6 +39,14 @@ class CustomUser(User):
     def leave_group(self, group):
         group.remove_members([self])
 
+    def is_complete(self):
+        """ returns true if the CustomUser has a complete account
+            (all #user cmd info populated) and false otherwise """
+        if self.first_name and self.last_name and self.phone_number:
+            return True
+        else:
+            return False
+
     """ Custom Exceptions """
 
     class _DuplicateField(Exception):

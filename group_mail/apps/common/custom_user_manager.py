@@ -46,19 +46,26 @@ class CustomUserManager(UserManager):
 
         # validate the email provided is unique to the new user
         try:
-            CustomUser.objects.get(email=email)
-            raise CustomUser.DuplicateEmail(email=email)
+            user = CustomUser.objects.get(email=email)
+            if user.is_complete():
+                raise CustomUser.DuplicateEmail(email=email)
+            else:
+                """ this user's account is incomplete, so we'll allow
+                    this function to populate the user's account with
+                    additional info """
+                pass
         except CustomUser.DoesNotExist:
             user = super(CustomUserManager, self).create_user(
                     username=email,
                     email=email,
                     password=password)
-            if first_name:
-                user.first_name = first_name
-            if last_name:
-                user.last_name = last_name
-            if phone_number:
-                user.phone_number = phone_number
-            user.save()
-            self.send_welcome_email(email)
-            return user
+
+        if first_name:
+            user.first_name = first_name
+        if last_name:
+            user.last_name = last_name
+        if phone_number:
+            user.phone_number = phone_number
+        user.save()
+        self.send_welcome_email(email)
+        return user
