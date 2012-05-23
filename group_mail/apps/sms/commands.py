@@ -97,10 +97,10 @@ class CreateGroupCmd(Command):
         self.expected_sms_len = 3
         self.requires_user = True
 
-    def _respond_too_long(self, group_attribute, text):
-        return self.respond("The group %s '%s' is too long." % (group_attribute, text) + \
+    def _respond_too_long(self, group_field, text):
+        return self.respond("The group %s '%s' is too long." % (group_field, text) + \
                 " Please choose a group %s less than %d characters and try again." % \
-                (group_attribute, Group.MAX_LEN))
+                (group_field, Group.MAX_LEN))
 
     def execute_hook(self, sms_fields, user):
         #  ensure that the group and code specified by the user is valid
@@ -111,13 +111,17 @@ class CreateGroupCmd(Command):
             Group.objects.create_group(user, group_name, group_code)
             return self.respond("Success! The group '%s' has been created." % group_name + \
                     ' Have members text #join (group name) (group code) to join.')
-        except Group.AlreadyExists:
-            return self.respond('A group with the name %s ' % group_name +
-                    'already exists. Please choose a different name and try again.')
+        except Group.AlreadyExists as e:
+            return self.respond(str(e) + \
+                    'Please choose a different name and try again.')
         except Group.NameTooLong:
             return self._respond_too_long('name', group_name)
         except Group.CodeTooLong:
             return self._respond_too_long('code', group_code)
+        except Group.NameNotAllowed as e:
+            return self.respond(str(e))
+        except Group.CodeNotAllowed as e:
+            return self.respond(str(e))
         except mailman_cmds.MailmanError as e:
             return self.respond(str(e))
 

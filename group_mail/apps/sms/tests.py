@@ -150,6 +150,26 @@ class CreateGroupCmdTest(_CmdTestCase):
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == g.name, "User's group is incorrect")
 
+    def test_group_name_not_allowed(self):
+        self.sms_fields[1] = 'word1 word2'
+        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+
+        self.assertTrue((response.find('name') != -1) and (response.find('may only contain') != -1),
+                'Group-name-not-allowed response not returned')
+
+        groups = Group.objects.all()
+        self.assertTrue(len(groups) == 0, "There exists a group with a name that's not allowed")
+
+    def test_group_code_not_allowed(self):
+        self.sms_fields[2] = 'word1 word2'
+        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+
+        self.assertTrue((response.find('code') != -1) and (response.find('may only contain') != -1),
+                'Group-code-not-allowed response not returned')
+
+        groups = Group.objects.all()
+        self.assertTrue(len(groups) == 0, "There exists a group with a code that's not allowed")
+
     def test_group_name_too_long(self):
         self.sms_fields[1] = ''.join(['*' for i in range(Group.MAX_LEN + 1)])
         response = str(self.cmd.execute_hook(self.sms_fields, self.user))

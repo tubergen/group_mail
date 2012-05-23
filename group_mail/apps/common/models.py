@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.forms import ValidationError
 from group_mail.apps.common.group_manager import GroupManager
 from group_mail.apps.common.custom_user_manager import CustomUserManager
 from group_mail.apps.mailman import mailman_cmds
@@ -74,6 +75,7 @@ class CustomUser(User):
 
 class Group(models.Model):
     MAX_LEN = 20  # max length of group name, code
+    ALLOWED_CHARS = "Only numbers and letters are allowed."
     name = models.CharField(max_length=MAX_LEN, unique=True)
     code = models.CharField(max_length=MAX_LEN)
     members = models.ManyToManyField(CustomUser, related_name='memberships')
@@ -115,17 +117,17 @@ class Group(models.Model):
 
     """ Custom Exceptions """
 
-    class AlreadyExists(Exception):
+    class AlreadyExists(ValidationError):
         def __init__(self, msg=None, name=''):
             if msg is None:
-                msg = 'Group %s already exists.' % name
+                msg = "A group with name '%s' already exists." % name
             super(Group.AlreadyExists, self).__init__(msg)
 
-    class _FieldTooLong(Exception):
+    class _FieldTooLong(ValidationError):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
-                msg = 'The group %s %s is longer than %d characters.' % \
-                        (field, value, Group.MAX_LEN)
+                msg = 'The group %s may not exceed %d characters.' % \
+                        (field, Group.MAX_LEN)
             super(Group._FieldTooLong, self).__init__(msg)
 
     class NameTooLong(_FieldTooLong):
@@ -136,9 +138,22 @@ class Group(models.Model):
         def __init__(self, msg=None, code=''):
             super(Group.CodeTooLong, self).__init__(msg, 'code', code)
 
-    class CodeInvalid(Exception):
+    class CodeInvalid(ValidationError):
         def __init__(self, msg=None, name='', code=''):
             if msg is None:
                 msg = 'The group code %s is invalid for the group %s' % \
                         (code, name)
-            super(Group.CodeInvalid, self).__init__(msg)
+
+    class _FieldNotAllowed(ValidationError):
+        def __init__(self, msg=None, field='field unspecified', value=''):
+            if msg is None:
+                msg = "The group %s may only contain letters and numbers." % field
+            super(Group._FieldNotAllowed, self).__init__(msg)
+
+    class NameNotAllowed(_FieldNotAllowed):
+        def __init__(self, msg=None, name=''):
+            super(Group.NameNotAllowed, self).__init__(msg, 'name', name)
+
+    class CodeNotAllowed(_FieldNotAllowed):
+        def __init__(self, msg=None, code=''):
+            super(Group.CodeNotAllowed, self).__init__(msg, 'code', code)
