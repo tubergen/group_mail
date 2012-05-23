@@ -26,22 +26,3 @@ def register(request):
 
 def register_thanks(request):
     return TemplateView.as_view(template_name='registration/register_thanks.html')(request)
-
-"""
-@login_required
-def create_group(request):
-    if request.method == 'POST':
-        form = CreateUserForm(request.POST)
-        if form.is_valid():
-            group_name = form.cleaned_data['group_name']
-            # no need to except here, since clean_ methods should validate data
-            Group.objects.create_group(request.user, group_name,
-                    form.cleaned_data['group_code'])
-            return HttpResponseRedirect('/group/%s' % group_name)
-    else:
-        form = CreateGroupForm()
-
-    return render_to_response('group/create.html',
-                              {'create_group_form': form},
-                              RequestContext(request))
-"""

@@ -6,13 +6,7 @@ name_invalid = "This value may contain only letters, numbers, hyphens, apostroph
 phone_number_help = 'We need this so that you can join groups with text messages.'
 
 
-class CreateUserForm(forms.Form):
-    email = forms.EmailField(max_length=CustomUser.MAX_LEN)
-    """
-    # remove password field for now
-    password = forms.CharField(max_length=CustomUser.MAX_LEN,
-            widget=forms.PasswordInput)
-    """
+class UserInfoForm(forms.Form):
     first_name = forms.RegexField(max_length=30, regex=r"^[\w.'-]+$",
         error_messages={'invalid': name_invalid})
     last_name = forms.RegexField(max_length=30, regex=r"^[\w.'-]+$",
@@ -22,6 +16,14 @@ class CreateUserForm(forms.Form):
         error_messages={'invalid': 'This field may only contain numbers.',
             'required': 'This field is required. %s' % phone_number_help})
 
+
+class CreateUserForm(UserInfoForm):
+    email = forms.EmailField(max_length=CustomUser.MAX_LEN)
+    """
+    # remove password field for now
+    password = forms.CharField(max_length=CustomUser.MAX_LEN,
+            widget=forms.PasswordInput)
+    """
     def clean_email(self):
         email = self.cleaned_data['email']
         try:
@@ -31,12 +33,16 @@ class CreateUserForm(forms.Form):
             return email
 
 
-class CompleteAccountForm(SetPasswordForm, CreateUserForm):
+class CompleteAccountForm(SetPasswordForm, UserInfoForm):
     def __init__(self, user, *args, **kwargs):
-        kwargs['initial'] = {'email': 'non@gmail.com'}  # user.email}
+        kwargs['initial'] = {}
+        kwargs['initial']['first_name'] = user.first_name
+        kwargs['initial']['last_name'] = user.last_name
+        kwargs['initial']['phone_number'] = user.phone_number
         super(CompleteAccountForm, self).__init__(user, *args, **kwargs)
 
     def __save__(self, commit=True):
+        raise Exception
         self.user.first_name = self.cleaned_data['first_name']
         self.user.last_name = self.cleaned_data['last_name']
         self.user.phone_number = self.cleaned_data['phone_number']

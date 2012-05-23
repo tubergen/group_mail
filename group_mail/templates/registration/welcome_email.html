@@ -3,7 +3,7 @@ You're receiving this e-mail because you created an account at {{ site_name }}.
 
 Please go to the following page and choose a password:
 {% block reset_link %}
-{{ protocol }}://{{ domain }}{% url django.contrib.auth.views.password_reset_confirm uidb36=uid, token=token %}
+{% include "registration/reset_link.html" %}
 {% endblock %}
 
 Your username, in case you've forgotten: {{ user.username }}
