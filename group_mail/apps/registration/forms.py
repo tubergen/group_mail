@@ -32,11 +32,9 @@ class CreateUserForm(forms.Form):
 
 
 class CompleteAccountForm(SetPasswordForm, CreateUserForm):
-    """"
     def __init__(self, user, *args, **kwargs):
-        kwargs['initial']['email'] = user.email
-        super(SetPasswordForm, self).__init__(user, *args, **kwargs) # initial={'email': user.email})
-    """
+        kwargs['initial'] = {'email': user.email}
+        super(CompleteAccountForm, self).__init__(user, *args, **kwargs)  # initial={'email': user.email})
 
     def __save__(self, commit=True):
         self.user.first_name = self.cleaned_data['first_name']
