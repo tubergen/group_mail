@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import SetPasswordForm
 from group_mail.apps.common.models import CustomUser
 
 name_invalid = "This value may contain only letters, numbers, hyphens, apostrophes, and periods."
@@ -28,3 +29,14 @@ class CreateUserForm(forms.Form):
             raise forms.ValidationError('A user with that email already exists.')
         except CustomUser.DoesNotExist:
             return email
+
+
+class CompleteAccountForm(SetPasswordForm, CreateUserForm):
+    def __save__(self, commit=True):
+        # call SetPasswordForm's save()
+        user = super(CompleteAccountForm, self).__save__(commit)
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.phone_number = self.cleaned_data['phone_number']
+        user.save()
+        return user
