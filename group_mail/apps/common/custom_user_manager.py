@@ -22,6 +22,8 @@ class CustomUserManager(UserManager):
                 'subject_template_name': 'registration/welcome_subject.txt',
             }
             form.save(**opts)
+        else:
+            raise Exception(str(form.errors))
 
     def create_user(self, email, password=None, first_name=None, \
             last_name=None, phone_number=None):
@@ -58,7 +60,7 @@ class CustomUserManager(UserManager):
             user = super(CustomUserManager, self).create_user(
                     username=email,
                     email=email,
-                    password=password)
+                    password='password')
 
         if first_name:
             user.first_name = first_name

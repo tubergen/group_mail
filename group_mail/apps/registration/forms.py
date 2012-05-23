@@ -32,11 +32,15 @@ class CreateUserForm(forms.Form):
 
 
 class CompleteAccountForm(SetPasswordForm, CreateUserForm):
+    """"
+    def __init__(self, user, *args, **kwargs):
+        kwargs['initial']['email'] = user.email
+        super(SetPasswordForm, self).__init__(user, *args, **kwargs) # initial={'email': user.email})
+    """
+
     def __save__(self, commit=True):
+        self.user.first_name = self.cleaned_data['first_name']
+        self.user.last_name = self.cleaned_data['last_name']
+        self.user.phone_number = self.cleaned_data['phone_number']
         # call SetPasswordForm's save()
-        user = super(CompleteAccountForm, self).__save__(commit)
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        user.phone_number = self.cleaned_data['phone_number']
-        user.save()
-        return user
+        return super(CompleteAccountForm, self).__save__(commit)

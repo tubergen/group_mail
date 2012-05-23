@@ -6,19 +6,6 @@
 {% block content %}
 <form method="post" action="">
 {% csrf_token %}
-
-  {% for field in form %}
-  <div class="submit-field">
-    {{ field.label_tag }}
-    {{ field }}
-    <span class="help-inline">
-      {% if field.errors %}
-      {{ field.errors }}
-      {% else %}
-      {{ field.help_text }}
-      {% endif %}
-    </span>
-  </div>
-  {% endfor %}
+{% include "generic_fields.html" %}
 <input type="submit" value="Create" />
 {% endblock %}
