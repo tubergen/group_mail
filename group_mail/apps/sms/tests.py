@@ -127,12 +127,12 @@ class NewUserCmdTest(_CmdTestCase):
 class CreateGroupCmdTest(_CmdTestCase):
     def setUp(self):
         super(CreateGroupCmdTest, self).setUp()
-        self.sms_fields = ['#create', 'group_name', 'group_code']
-        self.user = create_test_user('email@gmail.com')
+        self.sms_fields = ['#create', 'group_name', 'group_code', 'email@gmail.com']
+        self.from_number = '0123456789'
         self.cmd = CreateGroupCmd(self.sms_fields[0])
 
     def test_valid_create_group_cmd(self):
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
         self.assertTrue(response.find('Success') != -1, 'Success response not returned')
 
         groups = Group.objects.all()
@@ -142,17 +142,18 @@ class CreateGroupCmdTest(_CmdTestCase):
         self.assertEqual(g.name, self.sms_fields[1], 'Group has incorrect name')
         self.assertEqual(g.code, self.sms_fields[2], 'Group has incorrect code')
 
+        user = CustomUser.objects.get(email=self.sms_fields[3])
         members = g.members.all()
         self.assertTrue(len(members) == 1, 'Group has incorrect number of members')
-        self.assertTrue(members[0].username == self.user.username, 'Group has incorrect member')
+        self.assertTrue(members[0].username == user.username, 'Group has incorrect member')
 
-        memberships = self.user.memberships.all()
+        memberships = user.memberships.all()
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == g.name, "User's group is incorrect")
 
     def test_group_name_not_allowed(self):
         self.sms_fields[1] = 'word1 word2'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('name') != -1) and (response.find('may only contain') != -1),
                 'Group-name-not-allowed response not returned')
@@ -162,7 +163,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_code_not_allowed(self):
         self.sms_fields[2] = 'word1 word2'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('code') != -1) and (response.find('may only contain') != -1),
                 'Group-code-not-allowed response not returned')
@@ -172,7 +173,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_name_too_long(self):
         self.sms_fields[1] = ''.join(['*' for i in range(Group.MAX_LEN + 1)])
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('name') != -1) and (response.find('too long') != -1),
                 'Group-name-too-long response not returned')
@@ -182,7 +183,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_code_too_long(self):
         self.sms_fields[2] = ''.join(['*' for i in range(Group.MAX_LEN + 1)])
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('code') != -1) and (response.find('too long') != -1),
                 'Group-code-too-long response not returned')
@@ -192,8 +193,11 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_already_exists(self):
         self.test_valid_create_group_cmd()  # create a valid user in db
-
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        self.sms_fields[3] = 'a' + self.sms_fields[3]   # new user needs a distinct email
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
+        print '\n\n'
+        print response
+        print '\n\n'
 
         self.assertTrue((response.find('group') != -1) and (response.find('already exists') != -1),
                 'Group-already-exists response not returned')

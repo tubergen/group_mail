@@ -1,5 +1,6 @@
 from twilio.twiml import Response
 from django.core.exceptions import ValidationError
+from django.contrib.sites.models import Site
 from group_mail.apps.common.models import CustomUser, Group
 #  from django.http import HttpResponse
 from group_mail.apps.mailman import mailman_cmds
@@ -32,6 +33,28 @@ class Utilities(object):
             else:
                 text = text[:max_len]
         return text
+
+    def get_or_create_user(self, email, from_number):
+        user = None
+        resp = None
+        try:
+            user = CustomUser.objects.get_or_create_user(email=email, phone_number=from_number)
+        except CustomUser.InconsistentPhoneNumber, e:
+            domain = Site.objects.get_current().domain
+            resp = self.respond(str(e) + 'Go to %s, register or login to an account, and' % domain +
+                    ' go to your profile to change the phone number.')
+        except CustomUser.DuplicatePhoneNumber:
+            resp = self.respond('There is already an account for this phone number.'
+                    ' Text %s if you want to change the email for this number.' % \
+                    USAGE[ChangeEmailCmd.CMD_STR])
+        except ValidationError:
+            resp = self.respond('The email %s appears to be invalid. Please try again.' % \
+                    email)
+        except CustomUser.DuplicateEmail:
+            resp = self.respond("There is already an account with this email. If the"
+                    " account is your's, text %s to update the phone number for that account." % \
+                    USAGE[ChangeNumberCmd.CMD_STR])
+        return user, resp
 
 
 class Command(Utilities):
@@ -94,18 +117,24 @@ class CreateGroupCmd(Command):
 
     def __init__(self, cmd=CMD_STR):
         super(CreateGroupCmd, self).__init__(cmd)
-        self.expected_sms_len = 3
-        self.requires_user = True
+        self.expected_sms_len = 4
+        # self.requires_user = True
 
     def _respond_too_long(self, group_field, text):
         return self.respond("The group %s '%s' is too long." % (group_field, text) + \
                 " Please choose a group %s less than %d characters and try again." % \
                 (group_field, Group.MAX_LEN))
 
-    def execute_hook(self, sms_fields, user):
+    def execute_hook(self, sms_fields, from_number):
         #  ensure that the group and code specified by the user is valid
         group_name = sms_fields[1]
         group_code = sms_fields[2]
+        email = sms_fields[3]
+
+        user, resp = self.get_or_create_user(email, from_number)
+        if resp:  # if there was an error
+            return resp
+
         ###
         try:
             Group.objects.create_group(user, group_name, group_code)

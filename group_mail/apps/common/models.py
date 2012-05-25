@@ -72,6 +72,13 @@ class CustomUser(User):
                         (email, group_name)
             super(CustomUser.AlreadyMember, self).__init__(msg)
 
+    class InconsistentPhoneNumber(Exception):
+        def __init__(self, msg=None, email=''):
+            if msg is None:
+                msg = 'The email %s is associated with a different phone number.' % \
+                        email
+            super(CustomUser.InconsistentPhoneNumber, self).__init__(msg)
+
 
 class Group(models.Model):
     MAX_LEN = 20  # max length of group name, code

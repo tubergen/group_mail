@@ -71,3 +71,25 @@ class CustomUserManager(UserManager):
         user.save()
         self.send_welcome_email(email)
         return user
+
+    def get_or_create_user(self, email, password=None, first_name=None, \
+            last_name=None, phone_number=None):
+        """
+        Get's the user with the specified email so long as the phone number
+        matches that account. If the phone number doesn't match, raises
+        an exception. Creates a user if the email doesn't exist. Returns
+        the user.
+        """
+        # we do the import here to avoid a circular dependency
+        from group_mail.apps.common.models import CustomUser
+
+        try:
+            user = CustomUser.objects.get(email=email)
+            if user.phone_number != phone_number:
+                """ there exists a user, but with a different phone number.
+                    this could happen if the user get's a new phone."""
+                raise CustomUser.InconsistentPhoneNumber(email)
+        except CustomUser.DoesNotExist:
+            user = self.create_user(email, password, first_name,
+                    last_name, phone_number)
+        return user
