@@ -12,6 +12,6 @@ def parse_sms(request):
     if from_number != '' and sms_data != '':
         sms_fields = sms_data.split()
         cmd = COMMAND_CLASSES.get(sms_fields[0], Command)(sms_fields[0])
-        return cmd.execute(from_number, sms_fields)
+        return cmd.execute(sms_fields, from_number)
 
     raise Http404

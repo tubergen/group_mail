@@ -16,7 +16,7 @@ class Utilities(object):
 
     def respond(self, *args):
         r = Response()
-        for msg in args:
+        for msg in reversed(args):
             r.sms(msg)
         return r
 
@@ -38,7 +38,7 @@ class Utilities(object):
             user = CustomUser.objects.get_or_create_user(email=email, phone_number=from_number)
         except CustomUser.InconsistentPhoneNumber, e:
             domain = Site.objects.get_current().domain
-            resp = self.respond(str(e) + 'Go to %s, register or login to an account, and' % domain +
+            resp = self.respond(str(e), ' Go to %s, log in or create an account, and' % domain +
                     ' go to your profile to change the phone number.')
         except ValidationError:
             resp = self.respond('The email %s appears to be invalid. Please try again.' % email)
@@ -110,7 +110,7 @@ class CreateGroupCmd(Command):
                     ' Have members text #join (group name) (group code) to join.')
         except Group.AlreadyExists as e:
             return self.respond(str(e) + \
-                    'Please choose a different name and try again.')
+                    ' Please choose a different name and try again.')
         except Group.NameTooLong:
             return self._respond_too_long('name', group_name)
         except Group.CodeTooLong:

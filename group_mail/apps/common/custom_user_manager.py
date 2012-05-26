@@ -88,7 +88,7 @@ class CustomUserManager(UserManager):
             if user.phone_number and user.phone_number != phone_number:
                 """ there exists a user, but with a different phone number.
                     this could happen if the user get's a new phone."""
-                raise CustomUser.InconsistentPhoneNumber(email)
+                raise CustomUser.InconsistentPhoneNumber(email=email)
         except CustomUser.DoesNotExist:
             user = self.create_user(email, password, first_name,
                     last_name, phone_number)

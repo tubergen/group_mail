@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.forms import ValidationError
+from group_mail.apps.common.errors import CustomException
 from group_mail.apps.common.group_manager import GroupManager
 from group_mail.apps.common.custom_user_manager import CustomUserManager
 from group_mail.apps.mailman import mailman_cmds
@@ -50,7 +50,7 @@ class CustomUser(User):
 
     """ Custom Exceptions """
 
-    class _DuplicateField(Exception):
+    class _DuplicateField(CustomException):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
                 msg = 'A user with the %s %s already exists.' % (field, value)
@@ -65,14 +65,14 @@ class CustomUser(User):
         def __init__(self, msg=None, email=''):
             super(CustomUser.DuplicateEmail, self).__init__(msg, 'email', email)
 
-    class AlreadyMember(Exception):
+    class AlreadyMember(CustomException):
         def __init__(self, msg=None, email='', group_name=''):
             if msg is None:
                 msg = 'The member %s is already a member of the group %s' % \
                         (email, group_name)
             super(CustomUser.AlreadyMember, self).__init__(msg)
 
-    class InconsistentPhoneNumber(Exception):
+    class InconsistentPhoneNumber(CustomException):
         def __init__(self, msg=None, email=''):
             if msg is None:
                 msg = 'The email %s is associated with a different phone number.' % \
@@ -124,13 +124,13 @@ class Group(models.Model):
 
     """ Custom Exceptions """
 
-    class AlreadyExists(ValidationError):
+    class AlreadyExists(CustomException):
         def __init__(self, msg=None, name=''):
             if msg is None:
                 msg = "A group with name '%s' already exists." % name
             super(Group.AlreadyExists, self).__init__(msg)
 
-    class _FieldTooLong(ValidationError):
+    class _FieldTooLong(CustomException):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
                 msg = 'The group %s may not exceed %d characters.' % \
@@ -145,13 +145,13 @@ class Group(models.Model):
         def __init__(self, msg=None, code=''):
             super(Group.CodeTooLong, self).__init__(msg, 'code', code)
 
-    class CodeInvalid(ValidationError):
+    class CodeInvalid(CustomException):
         def __init__(self, msg=None, name='', code=''):
             if msg is None:
                 msg = 'The group code %s is invalid for the group %s' % \
                         (code, name)
 
-    class _FieldNotAllowed(ValidationError):
+    class _FieldNotAllowed(CustomException):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
                 msg = "The group %s may only contain letters and numbers." % field
