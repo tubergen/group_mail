@@ -69,7 +69,7 @@ class CreateGroupCmdTest(_CmdTestCase):
         self.cmd = CreateGroupCmd(self.sms_fields[0])
 
     def test_valid_create_group_cmd(self):
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
         self.assertTrue(response.find('Success') != -1, 'Success response not returned')
 
         groups = Group.objects.all()
@@ -90,7 +90,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_name_not_allowed(self):
         self.sms_fields[1] = 'word1 word2'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('name') != -1) and (response.find('may only contain') != -1),
                 'Group-name-not-allowed response not returned')
@@ -100,7 +100,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_code_not_allowed(self):
         self.sms_fields[2] = 'word1 word2'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('code') != -1) and (response.find('may only contain') != -1),
                 'Group-code-not-allowed response not returned')
@@ -110,7 +110,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_name_too_long(self):
         self.sms_fields[1] = ''.join(['*' for i in range(Group.MAX_LEN + 1)])
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('name') != -1) and (response.find('too long') != -1),
                 'Group-name-too-long response not returned')
@@ -120,7 +120,7 @@ class CreateGroupCmdTest(_CmdTestCase):
 
     def test_group_code_too_long(self):
         self.sms_fields[2] = ''.join(['*' for i in range(Group.MAX_LEN + 1)])
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
 
         self.assertTrue((response.find('code') != -1) and (response.find('too long') != -1),
                 'Group-code-too-long response not returned')
@@ -131,7 +131,7 @@ class CreateGroupCmdTest(_CmdTestCase):
     def test_group_already_exists(self):
         self.test_valid_create_group_cmd()  # create a valid user in db
         self.sms_fields[3] = 'a' + self.sms_fields[3]   # new user needs a distinct email
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number[::-1]))
         print '\n\n'
         print response
         print '\n\n'
@@ -146,36 +146,39 @@ class CreateGroupCmdTest(_CmdTestCase):
 class JoinGroupCmdTest(_CmdTestCase):
     def setUp(self):
         super(JoinGroupCmdTest, self).setUp()
-        number = '0123456789'
-        self.group_creator = create_test_user('email@gmail.com', phone_number=number)
-        self.user = create_test_user('email2@gmail.com', phone_number=number[::-1])
-        self.sms_fields = ['#join', 'group_name', 'group_code']
+        self.sms_fields = ['#create', 'group_name', 'group_code', 'email@gmail.com']
+        self.from_number = '0123456789'
+
+        self.group_creator = create_test_user('creator@gmail.com', phone_number='8888888888')
         self.group = create_test_group(self.group_creator, self.sms_fields[1], self.sms_fields[2])
+
         self.cmd = JoinGroupCmd(self.sms_fields[0])
 
     def test_valid_join_group_cmd(self):
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
         self.assertTrue(response.find('Success') != -1, 'Success response not returned')
 
+        user = CustomUser.objects.get(email=self.sms_fields[3])
         members = self.group.members.all()
 
         # ensure the group has 2 members: the creator and the new joiner
         self.assertTrue(len(members) == 2, 'Group has incorrect number of members')
-        self.assertTrue((members[0].username == self.user.username) or
-                (members[1].username == self.user.username), "Group doesn't have newly joined member")
+        self.assertTrue((members[0].username == user.username) or
+                (members[1].username == user.username), "Group doesn't have newly joined member")
         self.assertTrue((members[0].username == self.group_creator.username) or
                 (members[1].username == self.group_creator.username), "Group doesn't have original creator")
 
-        memberships = self.user.memberships.all()
+        memberships = user.memberships.all()
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == self.group.name, "User's group is incorrect")
 
     def test_group_does_not_exist(self):
         self.sms_fields[1] = 'doesnt_exist'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
         self.assertTrue((response.find('group') != -1) and (response.find('does not exist') != -1),
                 'Group-does-not-exist response not returned')
 
+        user = CustomUser.objects.get(email=self.sms_fields[3])
         members = self.group.members.all()
 
         # ensure the group has 1 members: the creator
@@ -184,15 +187,16 @@ class JoinGroupCmdTest(_CmdTestCase):
                 "Group doesn't have original creator")
 
         # ensure the user isn't in the group
-        memberships = self.user.memberships.all()
+        memberships = user.memberships.all()
         self.assertTrue(len(memberships) == 0, 'User has incorrect number of memberships')
 
     def test_group_code_incorrect(self):
         self.sms_fields[2] = 'incorrect_code'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
         self.assertTrue((response.find('code') != -1) and (response.find('not correct') != -1),
                 'Incorrect-code response not returned')
 
+        user = CustomUser.objects.get(email=self.sms_fields[3])
         members = self.group.members.all()
 
         # ensure the group has 1 members: the creator
@@ -201,24 +205,26 @@ class JoinGroupCmdTest(_CmdTestCase):
                 "Group doesn't have original creator")
 
         # ensure the user isn't in the group
-        memberships = self.user.memberships.all()
+        memberships = user.memberships.all()
         self.assertTrue(len(memberships) == 0, 'User has incorrect number of memberships')
 
     def test_already_a_member(self):
-        self.cmd.execute_hook(self.sms_fields, self.user)
-        response = str(self.cmd.execute_hook(self.sms_fields, self.user))
+        self.cmd.execute(self.sms_fields, self.from_number)
+        response = str(self.cmd.execute(self.sms_fields, self.from_number))
         self.assertTrue(response.find('already a member') != -1,
                 'Already-a-member response not returned')
+
+        user = CustomUser.objects.get(email=self.sms_fields[3])
         members = self.group.members.all()
 
         # ensure the group has 2 members (and no more): the creator and the new joiner
         self.assertTrue(len(members) == 2, 'Group has incorrect number of members')
-        self.assertTrue((members[0].username == self.user.username) or
-                (members[1].username == self.user.username), "Group doesn't have newly joined member")
+        self.assertTrue((members[0].username == user.username) or
+                (members[1].username == user.username), "Group doesn't have newly joined member")
         self.assertTrue((members[0].username == self.group_creator.username) or
                 (members[1].username == self.group_creator.username), "Group doesn't have original creator")
 
-        memberships = self.user.memberships.all()
+        memberships = user.memberships.all()
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == self.group.name, "User's group is incorrect")
 
@@ -245,68 +251,3 @@ class UtilitiesTest(TestCase):
         result = u.truncate(text, max_len, include_ellipses=False)
         self.assertTrue(len(result) == 10, 'Result has incorrect length')
         self.assertTrue(result[(max_len - 3):max_len] != '...', "Result ends in ellipses when it shouldn't")
-
-'''
-# Deprecated
-class NewUserCmdTest(_CmdTestCase):
-    def setUp(self):
-        super(NewUserCmdTest, self).setUp()
-        self.sms_fields = ['#user', 'myemail@gmail.com', 'firstname', 'lastname1 lastname2']
-        self.from_number = '0123456789'
-        self.cmd = NewUserCmd(self.sms_fields[0])
-
-    def test_valid_new_user_cmd(self):
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
-
-        self.assertTrue(response.find('Success') != -1, 'Success response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 1, 'Incorrect number of users after single #user cmd')
-
-        u = users[0]
-        self.assertEqual(u.phone_number, self.from_number, 'User has incorrect phone number')
-        self.assertEqual(u.email, self.sms_fields[1], 'User has incorrect email')
-        self.assertEqual(u.first_name, self.sms_fields[2], 'User has incorrect first name')
-        self.assertEqual(u.last_name, self.sms_fields[3], 'User has incorrect last name')
-
-    def test_invalid_email(self):
-        self.sms_fields[1] = 'invalid email'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
-
-        self.assertTrue((response.find('email') != -1) and (response.find('invalid') != -1),
-                'Invalid email response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 0, 'There exists a user with an invalid email')
-
-    def test_email_already_exists(self):
-        self.test_valid_new_user_cmd()  # create a valid user in db
-
-        # create another user with same email, different phone number
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
-
-        self.assertTrue((response.find('email') != -1) and (response.find('already') != -1),
-                'Email-already-exists response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 1, 'There exists two users with the same email')
-
-    def test_phone_number_already_exists(self):
-        self.test_valid_new_user_cmd()  # create a valid user in db
-
-        # create another user with same email, different phone number
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
-
-        self.assertTrue((response.find('phone number') != -1) and (response.find('already') != -1),
-                'Phone-number-already-exists response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 1, 'There exists two users with the same phone number')
-
-    def test_incomplete_user(self):
-        # create an incomplete user in the db
-        CustomUser.objects.create_user(email=self.sms_fields[1])
-
-        # now complete that user, ensuring that nothing goes wrong
-        self.test_valid_new_user_cmd()
-'''
