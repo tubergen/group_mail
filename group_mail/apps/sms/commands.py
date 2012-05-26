@@ -36,11 +36,15 @@ class Utilities(object):
         resp = None
         try:
             user = CustomUser.objects.get_or_create_user(email=email, phone_number=from_number)
-        except CustomUser.InconsistentPhoneNumber, e:
+        except CustomUser.InconsistentPhoneNumber as e:
             domain = Site.objects.get_current().domain
             resp = self.respond(str(e), ' Go to %s, log in or create an account, and' % domain +
-                    ' go to your profile to change the phone number.')
-        except ValidationError:
+                    ' go to you profile to change the phone number.')
+        except CustomUser.DuplicatePhoneNumber as e:
+            resp = self.respond(str(e) + ' TODO: This response is deprecated; needs to be removed/fixed.')
+        except ValidationError as e:
+            # TODO: validation error is no longer specific to email. This
+            # could be another error. We need a way to be more certain.
             resp = self.respond('The email %s appears to be invalid. Please try again.' % email)
         return user, resp
 
