@@ -50,7 +50,6 @@ class Command(Utilities):
 
     def __init__(self, cmd=''):
         self.expected_sms_len = None
-        self.min_sms_len = None
         self.cmd = cmd
 
     def get_user(self, from_number):
@@ -67,9 +66,7 @@ class Command(Utilities):
 
     def execute(self, sms_fields, from_number):
         if self.expected_sms_len and len(sms_fields) != self.expected_sms_len:
-            return self.invalid_cmd()
-        elif self.min_sms_len and len(sms_fields) < self.min_sms_len:
-            return self.invalid_cmd()
+            return self.invalid_cmd(sms_fields)
         else:
             kwargs, resp = self.get_cmd_info(sms_fields, from_number)
             if resp:  # if there was an error
@@ -88,9 +85,9 @@ class Command(Utilities):
         return self.respond('%s is not recognized.'
                     % self.truncate(self.cmd, 10) + ' Valid commands are:\n' + self.valid_cmds())
 
-    def invalid_cmd(self):
+    def invalid_cmd(self, sms_fields):
         return self.respond("We couldn't understand your %s request." % self.cmd +
-                " The proper format is:\n%s" % USAGE[self.cmd])
+                " The proper format is:\n%s" % USAGE[self.cmd] + str(sms_fields))
 
 
 class CreateGroupCmd(Command):

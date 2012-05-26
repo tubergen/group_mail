@@ -1,7 +1,7 @@
 # Django settings for group_mail project.
 import os.path  # used to make paths generic
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 MODIFY_MAILMAN_DB = not DEBUG
 PROJECT_DIR = os.path.dirname(__file__)
