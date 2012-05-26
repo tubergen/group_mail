@@ -5,7 +5,7 @@
 from django.test import TestCase
 from django.test import Client
 from django.conf import settings
-from group_mail.apps.sms.commands import NewUserCmd, CreateGroupCmd, JoinGroupCmd, Command, Utilities
+from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd, Command, Utilities
 from group_mail.apps.common.models import Group, CustomUser
 
 
@@ -30,7 +30,7 @@ class ParseSMSTest(TestCase):
 
     def setUp(self):
         self.test_dict = {'From': '1234567890',
-                          'Body': '#user myemail@gmail.com firstname lastname'}
+                          'Body': '#create name code myemail@gmail.com'}
         settings.DEBUG = True
 
     def cleanUp(self):
@@ -59,69 +59,6 @@ class _CmdTestCase(TestCase):
 
     def tearDown(self):
         settings.MODIFY_MAILMAN_DB = True
-
-
-class NewUserCmdTest(_CmdTestCase):
-    def setUp(self):
-        super(NewUserCmdTest, self).setUp()
-        self.sms_fields = ['#user', 'myemail@gmail.com', 'firstname', 'lastname1 lastname2']
-        self.from_number = '0123456789'
-        self.cmd = NewUserCmd(self.sms_fields[0])
-
-    def test_valid_new_user_cmd(self):
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
-
-        self.assertTrue(response.find('Success') != -1, 'Success response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 1, 'Incorrect number of users after single #user cmd')
-
-        u = users[0]
-        self.assertEqual(u.phone_number, self.from_number, 'User has incorrect phone number')
-        self.assertEqual(u.email, self.sms_fields[1], 'User has incorrect email')
-        self.assertEqual(u.first_name, self.sms_fields[2], 'User has incorrect first name')
-        self.assertEqual(u.last_name, self.sms_fields[3], 'User has incorrect last name')
-
-    def test_invalid_email(self):
-        self.sms_fields[1] = 'invalid email'
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
-
-        self.assertTrue((response.find('email') != -1) and (response.find('invalid') != -1),
-                'Invalid email response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 0, 'There exists a user with an invalid email')
-
-    def test_email_already_exists(self):
-        self.test_valid_new_user_cmd()  # create a valid user in db
-
-        # create another user with same email, different phone number
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
-
-        self.assertTrue((response.find('email') != -1) and (response.find('already') != -1),
-                'Email-already-exists response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 1, 'There exists two users with the same email')
-
-    def test_phone_number_already_exists(self):
-        self.test_valid_new_user_cmd()  # create a valid user in db
-
-        # create another user with same email, different phone number
-        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
-
-        self.assertTrue((response.find('phone number') != -1) and (response.find('already') != -1),
-                'Phone-number-already-exists response not returned')
-
-        users = CustomUser.objects.all()
-        self.assertTrue(len(users) == 1, 'There exists two users with the same phone number')
-
-    def test_incomplete_user(self):
-        # create an incomplete user in the db
-        CustomUser.objects.create_user(email=self.sms_fields[1])
-
-        # now complete that user, ensuring that nothing goes wrong
-        self.test_valid_new_user_cmd()
 
 
 class CreateGroupCmdTest(_CmdTestCase):
@@ -308,3 +245,68 @@ class UtilitiesTest(TestCase):
         result = u.truncate(text, max_len, include_ellipses=False)
         self.assertTrue(len(result) == 10, 'Result has incorrect length')
         self.assertTrue(result[(max_len - 3):max_len] != '...', "Result ends in ellipses when it shouldn't")
+
+'''
+# Deprecated
+class NewUserCmdTest(_CmdTestCase):
+    def setUp(self):
+        super(NewUserCmdTest, self).setUp()
+        self.sms_fields = ['#user', 'myemail@gmail.com', 'firstname', 'lastname1 lastname2']
+        self.from_number = '0123456789'
+        self.cmd = NewUserCmd(self.sms_fields[0])
+
+    def test_valid_new_user_cmd(self):
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+
+        self.assertTrue(response.find('Success') != -1, 'Success response not returned')
+
+        users = CustomUser.objects.all()
+        self.assertTrue(len(users) == 1, 'Incorrect number of users after single #user cmd')
+
+        u = users[0]
+        self.assertEqual(u.phone_number, self.from_number, 'User has incorrect phone number')
+        self.assertEqual(u.email, self.sms_fields[1], 'User has incorrect email')
+        self.assertEqual(u.first_name, self.sms_fields[2], 'User has incorrect first name')
+        self.assertEqual(u.last_name, self.sms_fields[3], 'User has incorrect last name')
+
+    def test_invalid_email(self):
+        self.sms_fields[1] = 'invalid email'
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number))
+
+        self.assertTrue((response.find('email') != -1) and (response.find('invalid') != -1),
+                'Invalid email response not returned')
+
+        users = CustomUser.objects.all()
+        self.assertTrue(len(users) == 0, 'There exists a user with an invalid email')
+
+    def test_email_already_exists(self):
+        self.test_valid_new_user_cmd()  # create a valid user in db
+
+        # create another user with same email, different phone number
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
+
+        self.assertTrue((response.find('email') != -1) and (response.find('already') != -1),
+                'Email-already-exists response not returned')
+
+        users = CustomUser.objects.all()
+        self.assertTrue(len(users) == 1, 'There exists two users with the same email')
+
+    def test_phone_number_already_exists(self):
+        self.test_valid_new_user_cmd()  # create a valid user in db
+
+        # create another user with same email, different phone number
+        response = str(self.cmd.execute_hook(self.sms_fields, self.from_number[::-1]))
+
+        self.assertTrue((response.find('phone number') != -1) and (response.find('already') != -1),
+                'Phone-number-already-exists response not returned')
+
+        users = CustomUser.objects.all()
+        self.assertTrue(len(users) == 1, 'There exists two users with the same phone number')
+
+    def test_incomplete_user(self):
+        # create an incomplete user in the db
+        CustomUser.objects.create_user(email=self.sms_fields[1])
+
+        # now complete that user, ensuring that nothing goes wrong
+        self.test_valid_new_user_cmd()
+'''

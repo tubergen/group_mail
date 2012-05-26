@@ -85,7 +85,7 @@ class CustomUserManager(UserManager):
 
         try:
             user = CustomUser.objects.get(email=email)
-            if user.phone_number != phone_number:
+            if user.phone_number and user.phone_number != phone_number:
                 """ there exists a user, but with a different phone number.
                     this could happen if the user get's a new phone."""
                 raise CustomUser.InconsistentPhoneNumber(email)

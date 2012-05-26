@@ -7,11 +7,8 @@ from group_mail.apps.mailman import mailman_cmds
 
 MAX_SMS_LEN = 160
 
-USAGE = {'#create': '#create (group name) (group code)',
-        '#join': '#join (group name) (group code)',
-        '#user': '#user (email) (first name) (last name)',
-        '#number': '#number (your email) (your password)',
-        '#email': '#email (new email) (your password)',
+USAGE = {'#create': '#create (group name) (group code) (your email)',
+        '#join': '#join (group name) (group code) (your email)',
         }
 
 
@@ -43,17 +40,8 @@ class Utilities(object):
             domain = Site.objects.get_current().domain
             resp = self.respond(str(e) + 'Go to %s, register or login to an account, and' % domain +
                     ' go to your profile to change the phone number.')
-        except CustomUser.DuplicatePhoneNumber:
-            resp = self.respond('There is already an account for this phone number.'
-                    ' Text %s if you want to change the email for this number.' % \
-                    USAGE[ChangeEmailCmd.CMD_STR])
         except ValidationError:
-            resp = self.respond('The email %s appears to be invalid. Please try again.' % \
-                    email)
-        except CustomUser.DuplicateEmail:
-            resp = self.respond("There is already an account with this email. If the"
-                    " account is your's, text %s to update the phone number for that account." % \
-                    USAGE[ChangeNumberCmd.CMD_STR])
+            resp = self.respond('The email %s appears to be invalid. Please try again.' % email)
         return user, resp
 
 
@@ -61,7 +49,6 @@ class Command(Utilities):
     USAGE = None
 
     def __init__(self, cmd=''):
-        self.requires_user = False
         self.expected_sms_len = None
         self.min_sms_len = None
         self.cmd = cmd
@@ -73,27 +60,22 @@ class Command(Utilities):
         except CustomUser.DoesNotExist:
             return None
 
-    def execute(self, from_number, sms_fields):
-            if self.requires_user:
-                user = self.get_user(from_number)
-                if user is not None:
-                    return self.verify_and_execute(sms_fields, user)
-                else:
-                    return self.respond("We don't recognize this number. Text %s"
-                        "to get set up." % NewUserCmd.USAGE)
-            else:
-                return self.verify_and_execute(sms_fields, from_number)
+    def get_cmd_info(self, sms_fields, from_number):
+        email = sms_fields[3]
+        user, resp = self.get_or_create_user(email, from_number)
+        return {'group_name': sms_fields[1], 'group_code': sms_fields[2], 'user': user}, resp
 
-    def verify_and_execute(self, sms_fields, user_identifier):
-        """ Depending on the command, user_identifier may be either the user's
-            phone number or the user object itself. """
-
+    def execute(self, sms_fields, from_number):
         if self.expected_sms_len and len(sms_fields) != self.expected_sms_len:
             return self.invalid_cmd()
         elif self.min_sms_len and len(sms_fields) < self.min_sms_len:
             return self.invalid_cmd()
         else:
-            return self.execute_hook(sms_fields, user_identifier)
+            kwargs, resp = self.get_cmd_info(sms_fields, from_number)
+            if resp:  # if there was an error
+                return resp
+            else:
+                return self.execute_hook(**kwargs)
 
     # Subclasses should override this
     def execute_hook(self, sms_fields, user_identifier):
@@ -118,24 +100,13 @@ class CreateGroupCmd(Command):
     def __init__(self, cmd=CMD_STR):
         super(CreateGroupCmd, self).__init__(cmd)
         self.expected_sms_len = 4
-        # self.requires_user = True
 
     def _respond_too_long(self, group_field, text):
         return self.respond("The group %s '%s' is too long." % (group_field, text) + \
                 " Please choose a group %s less than %d characters and try again." % \
                 (group_field, Group.MAX_LEN))
 
-    def execute_hook(self, sms_fields, from_number):
-        #  ensure that the group and code specified by the user is valid
-        group_name = sms_fields[1]
-        group_code = sms_fields[2]
-        email = sms_fields[3]
-
-        user, resp = self.get_or_create_user(email, from_number)
-        if resp:  # if there was an error
-            return resp
-
-        ###
+    def execute_hook(self, group_name, group_code, user):
         try:
             Group.objects.create_group(user, group_name, group_code)
             return self.respond("Success! The group '%s' has been created." % group_name + \
@@ -156,18 +127,17 @@ class CreateGroupCmd(Command):
 
 
 class JoinGroupCmd(Command):
-    CMD_STR = '#user'
+    CMD_STR = '#join'
     USAGE = USAGE[CMD_STR]
 
     def __init__(self, cmd=CMD_STR):
         super(JoinGroupCmd, self).__init__(cmd)
-        self.expected_sms_len = 3
-        self.requires_user = True
+        self.expected_sms_len = 4
 
-    def execute_hook(self, sms_fields, user):
-        group_name = sms_fields[1]
+    def execute_hook(self, group_name, group_code, user):
         try:
-            user.join_group(group_name, group_code=sms_fields[2])
+            user.join_group(group_name, group_code)
+            return self.respond("Success! You've been added to the group '%s.'" % group_name)
         except Group.DoesNotExist:
             return self.respond("The group '%s' does not exist." % group_name)
         except Group.CodeInvalid:
@@ -176,9 +146,9 @@ class JoinGroupCmd(Command):
         except CustomUser.AlreadyMember:
             return self.respond("You're already a member of the group '%s.'" % group_name)
 
-        return self.respond("Success! You've been added to the group '%s.'" % group_name)
 
-
+"""
+# Deprecated
 class NewUserCmd(Command):
     CMD_STR = '#user'
     USAGE = USAGE[CMD_STR]
@@ -213,11 +183,4 @@ class NewUserCmd(Command):
 
         return self.respond("Success! We've created an account for you and sent you a"
                 " welcome email. You can now #join and #create groups.")
-
-
-class ChangeNumberCmd(Command):
-    CMD_STR = '#number'
-
-
-class ChangeEmailCmd(Command):
-    CMD_STR = '#email'
+"""
