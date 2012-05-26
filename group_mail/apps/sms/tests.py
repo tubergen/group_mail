@@ -132,10 +132,6 @@ class CreateGroupCmdTest(_CmdTestCase):
         self.test_valid_create_group_cmd()  # create a valid user in db
         self.sms_fields[3] = 'a' + self.sms_fields[3]   # new user needs a distinct email
         response = str(self.cmd.execute(self.sms_fields, self.from_number[::-1]))
-        print '\n\n'
-        print response
-        print '\n\n'
-
         self.assertTrue((response.find('group') != -1) and (response.find('already exists') != -1),
                 'Group-already-exists response not returned')
 
