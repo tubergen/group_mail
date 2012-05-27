@@ -3,7 +3,21 @@ from django.contrib.auth.models import UserManager
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import PasswordResetForm
-# from group_mail.apps.mailman import mailman_cmds
+from django.contrib.auth.models import User
+
+
+class CustomPasswordResetForm(PasswordResetForm):
+    def clean_email(self):
+        """
+        Validate that an active user exists with the given email address,
+        but do not require that the user has a usuable password.
+        """
+        email = self.cleaned_data["email"]
+        self.users_cache = User.objects.filter(email__iexact=email,
+                is_active=True)
+        if not len(self.users_cache):
+            raise ValidationError(self.error_messages['unknown'])
+        return email
 
 
 class CustomUserManager(UserManager):
@@ -15,7 +29,7 @@ class CustomUserManager(UserManager):
 
         # use the password reset form to send the welcome email to easily
         # obtain password reset url
-        form = PasswordResetForm({'email': to_email})
+        form = CustomPasswordResetForm({'email': to_email})
         if form.is_valid():
             opts = {
                 'email_template_name': 'registration/welcome_email.html',
@@ -60,7 +74,7 @@ class CustomUserManager(UserManager):
             user = super(CustomUserManager, self).create_user(
                     username=email,
                     email=email,
-                    password='password')
+                    password=password)
 
         if first_name:
             user.first_name = first_name
