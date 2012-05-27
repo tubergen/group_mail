@@ -1,6 +1,56 @@
+from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from group_mail.apps.common.models import CustomUser, Email
+
+
+class CustomUserTest(TestCase):
+    def setUp(self):
+        self.kwargs = {'email': 'myemail@gmail.com',
+                'first_name': None,
+                'last_name': 'last_name',
+                'phone_number': '1234567890'}
+
+    def test_basic_populate(self):
+        u = CustomUser.objects.create_user(**self.kwargs)
+        fn = 'first'
+        u.populate(first_name=fn)
+        self.assertEqual(u.first_name, fn, 'first name not properly populated')
+
+    def test_email_populate(self):
+        u = CustomUser.objects.create_user(**self.kwargs)
+        email = 'something@gmail.com'
+        u.populate(email=email)
+
+        self.assertEqual(u.email_set.all()[1].email, email, \
+                'email not in email_set; not properly populated')
+
+        user = CustomUser.objects.get(email=email)
+        self.assertEqual(user.id, u.id, 'get method returned wrong user')
+
+    def test_double_identical_populate(self):
+        u = CustomUser.objects.create_user(**self.kwargs)
+        email = 'something@gmail.com'
+        u.populate(email=email)
+        u.populate(email=email)
+
+        self.assertEqual(u.email_set.all()[1].email, email, \
+                'email not in email_set; not properly populated')
+
+    def test_email_populate_when_email_object_already_exists(self):
+        u1 = CustomUser.objects.create_user(**self.kwargs)
+
+        email = 'something@gmail.com'
+        self.kwargs['email'] = email
+        self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
+        u2 = CustomUser.objects.create_user(**self.kwargs)
+        try:
+            u1.populate(email)
+        except IntegrityError:
+            self.assertEqual(len(u1.email_set.all()), 1, \
+                    'u1 has wrong email set len')
+            self.assertEqual(len(u2.email_set.all()), 1, \
+                    'u2 has wrong email set len')
 
 
 class GetMethodTest(TestCase):
@@ -23,6 +73,11 @@ class GetMethodTest(TestCase):
         self.assertEqual(user.id, u1.id, 'get method returned wrong user')
         self.assertEqual(user.id, u2.id, 'get method returned wrong user')
 
+    """
+    TODO: Write test to ensure that get works with more than one
+    constraint, and with those weird django selectors (__icontains etc.).
+    """
+
 
 class CreateUserTest(TestCase):
     def setUp(self):
@@ -44,6 +99,11 @@ class CreateUserTest(TestCase):
         for key in user_properties.keys():
             self.assertEqual(user_properties[key], self.kwargs[key],
                     'user has incorrect %s' % key)
+
+        # test that the email_set also contains the email
+        email_obj = user.email_set.all()[0]
+        self.assertEqual(email_obj.email, self.kwargs['email'], \
+                "email set doesn't contain email")
 
     def test_create_user_with_field_unpopulated(self):
         self.kwargs['first_name'] = None

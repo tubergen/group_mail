@@ -1,4 +1,3 @@
-import sys
 from django.contrib.auth.models import UserManager
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -46,27 +45,28 @@ class CustomUserManager(UserManager):
         the primary emails stored in the email field.
         """
         from group_mail.apps.common.models import CustomUser, Email
-        try:
-            return super(CustomUserManager, self).get(*args, **kwargs)
-        except CustomUser.DoesNotExist as e:
-            """
-            hold on to the error variables. we have to use this weird
-            control flow because python won't let me do try/except within
-            a try/except
-            """
-            msg = str(e)
-            err_type, value, traceback = sys.exc_info()
 
         if 'email' in kwargs.keys():
+            original_email = kwargs['email']
             try:
                 # if this email is in some user's email set, we want to
-                # return that user
+                # grab the primary email for that user for use in our query
                 email_object = Email.objects.get(email=kwargs['email'])
-                return email_object.user
+                primary_email = email_object.user.email
             except Email.DoesNotExist:
+                primary_email = original_email
+
+            kwargs['email'] = primary_email
+            try:
+                return super(CustomUserManager, self).get(*args, **kwargs)
+            except CustomUser.DoesNotExist:
                 pass
 
-        raise CustomUser.DoesNotExist, (msg, err_type, value), traceback
+            # we're doomed to fail at this point. restore this so that we get a
+            # sensisble error message
+            kwargs['email'] = original_email
+
+        return super(CustomUserManager, self).get(*args, **kwargs)
 
     def get_user(self, **kwargs):
         """

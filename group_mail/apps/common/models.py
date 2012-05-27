@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth.models import User
 from django.conf import settings
 from group_mail.apps.common.errors import CustomException
@@ -50,8 +50,16 @@ class CustomUser(User):
 
     def populate(self, email=None, first_name=None, last_name=None, phone_number=None):
         if email:
-            # TODO: this might break if email object already exists
-            Email.objects.create(email=email, user=self)
+            # check if this account already has the email
+            try:
+                found_email = self.email_set.get(email=email)
+            except Email.DoesNotExist:
+                found_email = None
+
+            if not found_email:
+                # This will raise an IntegrityError if the email object already exists
+                Email.objects.create(email=email, user=self)
+
         if first_name and not self.first_name:
             self.first_name = first_name
         if last_name and not self.last_name:
@@ -92,5 +100,8 @@ class CustomUser(User):
 
 
 class Email(models.Model):
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     user = models.ForeignKey(CustomUser, related_name='email_set')
+
+    def __unicode__(self):
+        return self.email
