@@ -3,6 +3,27 @@ from django.test import TestCase
 from group_mail.apps.common.models import CustomUser, Email
 
 
+class GetMethodTest(TestCase):
+    def setUp(self):
+        self.kwargs = {'email': 'myemail@gmail.com',
+                'first_name': 'first_name',
+                'last_name': 'last_name',
+                'phone_number': '1234567890'}
+
+    def test_get_method_searches_multiple_emails(self):
+        user = CustomUser.objects.create_user(**self.kwargs)
+        e1 = 'a@a.com'
+        e2 = 'b@b.com'
+        Email.objects.create(email=e1, user=user)
+        Email.objects.create(email=e2, user=user)
+
+        u1 = CustomUser.objects.get(email=e1)
+        u2 = CustomUser.objects.get(email=e2)
+
+        self.assertEqual(user.id, u1.id, 'get method returned wrong user')
+        self.assertEqual(user.id, u2.id, 'get method returned wrong user')
+
+
 class CreateUserTest(TestCase):
     def setUp(self):
         self.kwargs = {'email': 'myemail@gmail.com',
@@ -24,18 +45,24 @@ class CreateUserTest(TestCase):
             self.assertEqual(user_properties[key], self.kwargs[key],
                     'user has incorrect %s' % key)
 
-    def test_get_method_searches_multiple_emails(self):
-        user = CustomUser.objects.create_user(**self.kwargs)
-        e1 = 'a@a.com'
-        e2 = 'b@b.com'
-        Email.objects.create(email=e1, user=user)
-        Email.objects.create(email=e2, user=user)
+    def test_create_user_with_field_unpopulated(self):
+        self.kwargs['first_name'] = None
+        u = CustomUser.objects.create_user(**self.kwargs)
+        user = CustomUser.objects.all()[0]
+        self.assertEqual(u.id, user.id, "returned user isn't the same as db user")
 
-        u1 = CustomUser.objects.get(email=e1)
-        u2 = CustomUser.objects.get(email=e2)
+        user_properties = {'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone_number': user.phone_number}
 
-        self.assertEqual(user.id, u1.id, 'get method returned wrong user')
-        self.assertEqual(user.id, u2.id, 'get method returned wrong user')
+        # django models will set first_name to '', so make the corresponding
+        # change here
+        self.kwargs['first_name'] = ''
+
+        for key in user_properties.keys():
+            self.assertEqual(user_properties[key], self.kwargs[key],
+                    'user has incorrect %s' % key)
 
     def test_invalid_email(self):
         self.kwargs['email'] = 'invalid'
@@ -72,10 +99,11 @@ class CreateUserTest(TestCase):
 
 
 class GetOrCreateUserTest(TestCase):
-
     def setUp(self):
         self.kwargs = {'email': 'myemail@gmail.com',
-                'phone_number': '1234567890'}
+                'phone_number': '1234567890',
+                'first_name': None,
+                'last_name': None}
 
     def test_basic_get_or_create(self):
         u = CustomUser.objects.get_or_create_user(**self.kwargs)
@@ -83,21 +111,71 @@ class GetOrCreateUserTest(TestCase):
         self.assertEqual(u.id, user.id, "returned user isn't the same as db user")
 
         user_properties = {'email': user.email,
-                'phone_number': user.phone_number}
+                'phone_number': user.phone_number,
+                'first_name': user.first_name,
+                'last_name': user.last_name}
+
+        # django models will set 'None' fields to '', so make the corresponding
+        # change here
+        self.kwargs['first_name'] = ''
+        self.kwargs['last_name'] = ''
 
         for key in user_properties.keys():
             self.assertEqual(user_properties[key], self.kwargs[key],
                     'user has incorrect %s' % key)
+
+        # ensure unpopulated fields are unpopulated
+        self.assertEqual(u.id, user.id, "returned user isn't the same as db user")
 
     def test_user_already_exists(self):
         u1 = CustomUser.objects.get_or_create_user(**self.kwargs)
         u2 = CustomUser.objects.get_or_create_user(**self.kwargs)
         self.assertEqual(u1.id, u2.id, 'different user returned')
 
+    def test_find_and_populate_incomplete_users(self):
+        """
+        if the user doesn't have the phone number specified, we
+        still want to be able to get that incomplete user account.
+
+        further, get_or_create should populate some of its fields
+        if the fields are specified.
+        """
+        # create an incomplete user
+        u1 = CustomUser.objects.get_or_create_user(**self.kwargs)
+
+        # get that incomplete user, and populate its first_name field
+        self.kwargs['first_name'] = 'first'
+        u2 = CustomUser.objects.get_or_create_user(**self.kwargs)
+
+        self.assertEqual(u1.id, u2.id, 'returned wrong user')
+        self.assertEqual(u2.first_name, self.kwargs['first_name'], \
+                'first_name field incorrectly populated')
+        # Note: u1.first_name will still be None here.
+
+    def test_populate_phone_number_on_incomplete_user(self):
+        """
+        ensure that we populate incomplete users' phone numbers. this
+        is a case of the above test, but it's special due to the
+        significance of phone numbers in get_or_create_user.
+        """
+        old_no = self.kwargs['phone_number']
+        # create an incomplete user
+        self.kwargs['phone_number'] = None
+        u1 = CustomUser.objects.get_or_create_user(**self.kwargs)
+
+        # get that incomplete user, and populate its phone_number field
+        self.kwargs['phone_number'] = old_no
+        u2 = CustomUser.objects.get_or_create_user(**self.kwargs)
+
+        self.assertEqual(u1.id, u2.id, 'returned wrong user')
+        self.assertEqual(u2.phone_number, self.kwargs['phone_number'], \
+                'phone_number field incorrectly populated')
+        # Note: u1.phone_number will still be None here.
+
     def test_inconsistent_phone_number(self):
         """
-        there's an account with the specified email, but there's no account
-        with the specified phone number
+        there's an account with the specified email, and it has a phone number
+        set, but there's no account with the specified phone number
         """
         CustomUser.objects.get_or_create_user(**self.kwargs)
         self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]

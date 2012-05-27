@@ -52,11 +52,11 @@ class CustomUser(User):
         if email:
             # TODO: this might break if email object already exists
             Email.objects.create(email=email, user=self)
-        if first_name:
+        if first_name and not self.first_name:
             self.first_name = first_name
-        if last_name:
+        if last_name and not self.last_name:
             self.last_name = last_name
-        if phone_number:
+        if phone_number and not self.phone_number:
             self.phone_number = phone_number
         self.save()
 

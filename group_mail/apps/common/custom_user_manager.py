@@ -1,4 +1,4 @@
-# from django.conf import settings
+import sys
 from django.contrib.auth.models import UserManager
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -48,8 +48,14 @@ class CustomUserManager(UserManager):
         from group_mail.apps.common.models import CustomUser, Email
         try:
             return super(CustomUserManager, self).get(*args, **kwargs)
-        except CustomUser.DoesNotExist:
-            pass
+        except CustomUser.DoesNotExist as e:
+            """
+            hold on to the error variables. we have to use this weird
+            control flow because python won't let me do try/except within
+            a try/except
+            """
+            msg = str(e)
+            err_type, value, traceback = sys.exc_info()
 
         if 'email' in kwargs.keys():
             try:
@@ -60,7 +66,7 @@ class CustomUserManager(UserManager):
             except Email.DoesNotExist:
                 pass
 
-        raise CustomUser.DoesNotExist
+        raise CustomUser.DoesNotExist, (msg, err_type, value), traceback
 
     def get_user(self, **kwargs):
         """
@@ -139,14 +145,17 @@ class CustomUserManager(UserManager):
             populate the account with the new email (and other info if provided).
             """
             user = p_user
-            user.populate(email, first_name, last_name, phone_number)
         elif user and not p_user:
-            """
-            there's an account with this email, but not this phone number.
-            we want to raise an error so that the user must confirm the number.
-            """
-            raise CustomUser.InconsistentPhoneNumber(email=email)
+            if phone_number and user.phone_number:
+                """
+                There's an account with this email, and it has a phone number
+                set already, but it's not this phone number.
+                We want to raise an error so that the user must confirm the number.
+                """
+                raise CustomUser.InconsistentPhoneNumber(email=email)
         else:
-            user = self.create_user(email, password, phone_number)
+            user = self.create_user(email=email, password=password, \
+                    phone_number=phone_number)
 
+        user.populate(email, first_name, last_name, phone_number)
         return user
