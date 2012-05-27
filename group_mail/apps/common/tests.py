@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from group_mail.apps.common.models import CustomUser
+from group_mail.apps.common.models import CustomUser, Email
 
 
 class CreateUserTest(TestCase):
@@ -23,6 +23,19 @@ class CreateUserTest(TestCase):
         for key in user_properties.keys():
             self.assertEqual(user_properties[key], self.kwargs[key],
                     'user has incorrect %s' % key)
+
+    def test_get_method_searches_multiple_emails(self):
+        user = CustomUser.objects.create_user(**self.kwargs)
+        e1 = 'a@a.com'
+        e2 = 'b@b.com'
+        Email.objects.create(email=e1, user=user)
+        Email.objects.create(email=e2, user=user)
+
+        u1 = CustomUser.objects.get(email=e1)
+        u2 = CustomUser.objects.get(email=e2)
+
+        self.assertEqual(user.id, u1.id, 'get method returned wrong user')
+        self.assertEqual(user.id, u2.id, 'get method returned wrong user')
 
     def test_invalid_email(self):
         self.kwargs['email'] = 'invalid'
@@ -113,7 +126,4 @@ class GetOrCreateUserTest(TestCase):
             self.assertTrue(False, 'Inconsistent phone number not recognized')
         except CustomUser.InconsistentPhoneNumber:
             # we expect and want this exception to be thrown
-           pass
-
-
-
+            pass

@@ -42,7 +42,6 @@ class CompleteAccountForm(SetPasswordForm, UserInfoForm):
         super(CompleteAccountForm, self).__init__(user, *args, **kwargs)
 
     def __save__(self, commit=True):
-        raise Exception
         self.user.first_name = self.cleaned_data['first_name']
         self.user.last_name = self.cleaned_data['last_name']
         self.user.phone_number = self.cleaned_data['phone_number']

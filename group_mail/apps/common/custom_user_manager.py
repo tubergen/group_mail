@@ -39,7 +39,30 @@ class CustomUserManager(UserManager):
         else:
             raise Exception(str(form.errors))
 
-    def get_user(self, field_dict, default=None):
+    def get(self, *args, **kwargs):
+        """
+        Override the default get() method so that we can check all the emails
+        in the system (including those in email_set) for a user, not just
+        the primary emails stored in the email field.
+        """
+        from group_mail.apps.common.models import CustomUser, Email
+        try:
+            return super(CustomUserManager, self).get(*args, **kwargs)
+        except CustomUser.DoesNotExist:
+            pass
+
+        if 'email' in kwargs.keys():
+            try:
+                # if this email is in some user's email set, we want to
+                # return that user
+                email_object = Email.objects.get(email=kwargs['email'])
+                return email_object.user
+            except Email.DoesNotExist:
+                pass
+
+        raise CustomUser.DoesNotExist
+
+    def get_user(self, **kwargs):
         """
         Get's and returns a user object according to field_dict, or returns
         None if no such user exists.
@@ -47,20 +70,12 @@ class CustomUserManager(UserManager):
         field_dict must be of the form {'user_field': value},
         e.g.: {'email': 'me@gmail.com'}
         """
-        from group_mail.apps.common.models import CustomUser, Email
+        from group_mail.apps.common.models import CustomUser
 
         try:
-            return CustomUser.objects.get(**field_dict)
+            return CustomUser.objects.get(**kwargs)
         except CustomUser.DoesNotExist:
-            if 'email' in field_dict.keys():
-                try:
-                    # if this email is in some user's email set, we want to
-                    # return that user
-                    email_object = Email.objects.get(email=field_dict['email'])
-                    return email_object.user
-                except Email.DoesNotExist:
-                    pass
-            return default
+            return None
 
     """ Helper methods """
 
@@ -77,11 +92,11 @@ class CustomUserManager(UserManager):
         except ValidationError:
             raise
 
-        user = self.get_user({'email': email})
+        user = self.get_user(email=email)
         if user:
             raise CustomUser.DuplicateEmail(email=email)
         else:
-            p_user = self.get_user({'phone_number': phone_number})
+            p_user = self.get_user(phone_number=phone_number)
             if p_user:
                 """
                 We're trying to create a user with a new email but same phone number as
@@ -108,8 +123,8 @@ class CustomUserManager(UserManager):
         # we do the import here to avoid a circular dependency
         from group_mail.apps.common.models import CustomUser
 
-        user = self.get_user({'email': email})
-        p_user = self.get_user({'phone_number': phone_number})
+        user = self.get_user(email=email)
+        p_user = self.get_user(phone_number=phone_number)
 
         if user and p_user:
             if p_user.id != user.id:
@@ -120,9 +135,11 @@ class CustomUserManager(UserManager):
                 raise CustomUser.InconsistentPhoneNumber(email=email)
         elif p_user and not user:
             """
-            there's an account with this phone number, but not this email
+            there's an account with this phone number, but not this email.
+            populate the account with the new email (and other info if provided).
             """
             user = p_user
+            user.populate(email, first_name, last_name, phone_number)
         elif user and not p_user:
             """
             there's an account with this email, but not this phone number.
@@ -132,5 +149,4 @@ class CustomUserManager(UserManager):
         else:
             user = self.create_user(email, password, phone_number)
 
-        user.populate(email, first_name, last_name, phone_number)
         return user
