@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.conf.urls import patterns
+from django.conf.urls import patterns, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
 from group_mail.apps.common.views import homepage_splitter
@@ -10,8 +10,8 @@ from group_mail.apps.registration.djviews import password_reset_confirm
 from group_mail.apps.registration.forms import CompleteAccountForm
 
 # Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
-# admin.autodiscover()
+from django.contrib import admin
+admin.autodiscover()
 
 urlpatterns = patterns('',
 
@@ -32,7 +32,7 @@ urlpatterns = patterns('',
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
+    (r'^admin/', include(admin.site.urls)),
 )
 
 if settings.DEBUG:

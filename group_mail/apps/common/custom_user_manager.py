@@ -39,20 +39,37 @@ class CustomUserManager(UserManager):
         else:
             raise Exception(str(form.errors))
 
-    def create_user(self, email, password=None, first_name=None, \
-            last_name=None, phone_number=None):
-        """ Creates a CustomUser with the values given by the parameters and returns
-            the CustomUser if successful."""
-        # we do the import here to avoid a circular dependency
-        from group_mail.apps.common.models import CustomUser
+    def get_user(self, field_dict, default=None):
+        """
+        Get's and returns a user object according to field_dict, or returns
+        None if no such user exists.
 
-        if phone_number:
-            # validate the phone number provided is unique to the new user
-            try:
-                user = CustomUser.objects.get(phone_number=phone_number)
-                raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
-            except CustomUser.DoesNotExist:
-                pass
+        field_dict must be of the form {'user_field': value},
+        e.g.: {'email': 'me@gmail.com'}
+        """
+        from group_mail.apps.common.models import CustomUser, Email
+
+        try:
+            return CustomUser.objects.get(**field_dict)
+        except CustomUser.DoesNotExist:
+            if 'email' in field_dict.keys():
+                try:
+                    # if this email is in some user's email set, we want to
+                    # return that user
+                    email_object = Email.objects.get(email=field_dict['email'])
+                    return email_object.user
+                except Email.DoesNotExist:
+                    pass
+            return default
+
+    """ Helper methods """
+
+    def create_user(self, email, password=None, first_name=None, last_name=None, phone_number=None):
+        """
+        Creates a CustomUser with the values given by the parameters and returns
+        the CustomUser if successful.
+        """
+        from group_mail.apps.common.models import CustomUser
 
         # validate the email
         try:
@@ -60,29 +77,23 @@ class CustomUserManager(UserManager):
         except ValidationError:
             raise
 
-        # validate the email provided is unique to the new user
-        try:
-            user = CustomUser.objects.get(email=email)
-            if user.is_complete():
-                raise CustomUser.DuplicateEmail(email=email)
-            else:
-                """ this user's account is incomplete, so we'll allow
-                    this function to populate the user's account with
-                    additional info """
-                pass
-        except CustomUser.DoesNotExist:
-            user = super(CustomUserManager, self).create_user(
-                    username=email,
-                    email=email,
-                    password=password)
+        user = self.get_user({'email': email})
+        if user:
+            raise CustomUser.DuplicateEmail(email=email)
+        else:
+            p_user = self.get_user({'phone_number': phone_number})
+            if p_user:
+                """
+                We're trying to create a user with a new email but same phone number as
+                another account.
+                """
+                raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
 
-        if first_name:
-            user.first_name = first_name
-        if last_name:
-            user.last_name = last_name
-        if phone_number:
-            user.phone_number = phone_number
-        user.save()
+        user = super(CustomUserManager, self).create_user(
+                username=email,
+                email=email,
+                password=password)
+        user.populate(email, first_name, last_name, phone_number)
         self.send_welcome_email(email)
         return user
 
@@ -97,13 +108,29 @@ class CustomUserManager(UserManager):
         # we do the import here to avoid a circular dependency
         from group_mail.apps.common.models import CustomUser
 
-        try:
-            user = CustomUser.objects.get(email=email)
-            if user.phone_number and user.phone_number != phone_number:
-                """ there exists a user, but with a different phone number.
-                    this could happen if the user get's a new phone."""
+        user = self.get_user({'email': email})
+        p_user = self.get_user({'phone_number': phone_number})
+
+        if user and p_user:
+            if p_user.id != user.id:
+                """
+                we've specified an existent email for which the associated
+                phone number does not match.
+                """
                 raise CustomUser.InconsistentPhoneNumber(email=email)
-        except CustomUser.DoesNotExist:
-            user = self.create_user(email, password, first_name,
-                    last_name, phone_number)
+        elif p_user and not user:
+            """
+            there's an account with this phone number, but not this email
+            """
+            user = p_user
+        elif user and not p_user:
+            """
+            there's an account with this email, but not this phone number.
+            we want to raise an error so that the user must confirm the number.
+            """
+            raise CustomUser.InconsistentPhoneNumber(email=email)
+        else:
+            user = self.create_user(email, password, phone_number)
+
+        user.populate(email, first_name, last_name, phone_number)
         return user

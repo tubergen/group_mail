@@ -48,6 +48,18 @@ class CustomUser(User):
         else:
             return False
 
+    def populate(self, email=None, first_name=None, last_name=None, phone_number=None):
+        if email:
+            # TODO: this might break if email object already exists
+            Email.objects.create(email=email, user=self)
+        if first_name:
+            self.first_name = first_name
+        if last_name:
+            self.last_name = last_name
+        if phone_number:
+            self.phone_number = phone_number
+        self.save()
+
     """ Custom Exceptions """
 
     class _DuplicateField(CustomException):
@@ -58,8 +70,7 @@ class CustomUser(User):
 
     class DuplicatePhoneNumber(_DuplicateField):
         def __init__(self, msg=None, phone_number=''):
-            super(CustomUser.DuplicatePhoneNumber, self).__init__(msg,
-                    'phone number', phone_number)
+            super(CustomUser.DuplicatePhoneNumber, self).__init__(msg, 'phone number', phone_number)
 
     class DuplicateEmail(_DuplicateField):
         def __init__(self, msg=None, email=''):
@@ -78,3 +89,8 @@ class CustomUser(User):
                 msg = 'The email %s is associated with a different phone number.' % \
                         email
             super(CustomUser.InconsistentPhoneNumber, self).__init__(msg)
+
+
+class Email(models.Model):
+    email = models.EmailField()
+    user = models.ForeignKey(CustomUser, related_name='email_set')

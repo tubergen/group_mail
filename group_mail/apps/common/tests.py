@@ -35,6 +35,9 @@ class CreateUserTest(TestCase):
 
     def test_duplicate_phone_number(self):
         CustomUser.objects.create_user(**self.kwargs)
+
+        # change the email so we don't get duplicate email
+        self.kwargs['email'] += 'a'
         try:
             CustomUser.objects.create_user(**self.kwargs)
             self.assertTrue(False, 'duplicate phone number undetected')
@@ -44,9 +47,10 @@ class CreateUserTest(TestCase):
 
     def test_duplicate_email(self):
         CustomUser.objects.create_user(**self.kwargs)
+
+        # change the phone number so we don't get duplicate phone number
+        self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
         try:
-            # change the phone number so we don't get duplicate phone number
-            self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
             CustomUser.objects.create_user(**self.kwargs)
             self.assertTrue(False, 'duplicate email undetected')
         except CustomUser.DuplicateEmail:
@@ -78,11 +82,38 @@ class GetOrCreateUserTest(TestCase):
         self.assertEqual(u1.id, u2.id, 'different user returned')
 
     def test_inconsistent_phone_number(self):
+        """
+        there's an account with the specified email, but there's no account
+        with the specified phone number
+        """
         CustomUser.objects.get_or_create_user(**self.kwargs)
+        self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
         try:
-            self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
             CustomUser.objects.get_or_create_user(**self.kwargs)
             self.assertTrue(False, 'Inconsistent phone number not recognized')
         except CustomUser.InconsistentPhoneNumber:
             # we expect and want this exception to be thrown
             pass
+
+    def test_inconsistent_phone_number_conflicting_accounts(self):
+        """
+        there's an account with the specified email, and there's an account
+        with the specified phone number, and they aren't the same
+        """
+        # set up users that will cause criteria to be met
+        CustomUser.objects.get_or_create_user(**self.kwargs)
+        self.kwargs['email'] += 'a'
+        self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
+        CustomUser.objects.get_or_create_user(**self.kwargs)
+
+        # change kwargs one more time to meet the critera
+        self.kwargs['phone_number'] = self.kwargs['phone_number'][::-1]
+        try:
+            CustomUser.objects.get_or_create_user(**self.kwargs)
+            self.assertTrue(False, 'Inconsistent phone number not recognized')
+        except CustomUser.InconsistentPhoneNumber:
+            # we expect and want this exception to be thrown
+           pass
+
+
+
