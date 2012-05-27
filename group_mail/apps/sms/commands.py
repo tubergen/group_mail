@@ -1,8 +1,8 @@
 from twilio.twiml import Response
 from django.core.exceptions import ValidationError
 from django.contrib.sites.models import Site
-from group_mail.apps.common.models import CustomUser, Group
-#  from django.http import HttpResponse
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.models import Group
 from group_mail.apps.mailman import mailman_cmds
 
 MAX_SMS_LEN = 160

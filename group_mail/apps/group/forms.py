@@ -1,5 +1,5 @@
 from django import forms
-from group_mail.apps.common.models import Group
+from group_mail.apps.group.models import Group
 from group_mail.apps.group.fields import MultiEmailField
 
 

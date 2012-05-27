@@ -1,6 +1,7 @@
 """ This isn't a real app. The only purpose is to populate the db
     on local development servers. """
-from group_mail.apps.common.models import Group, CustomUser
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.models import Group
 from django.http import HttpResponse
 
 

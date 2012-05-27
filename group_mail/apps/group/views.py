@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from group_mail.apps.common.models import Group
+from group_mail.apps.group.models import Group
 from django.http import HttpResponseRedirect
 from group_mail.apps.group.forms import CreateGroupForm, AddMembersForm
 from django.contrib.auth.decorators import login_required

@@ -6,7 +6,8 @@ from django.test import TestCase
 from django.test import Client
 from django.conf import settings
 from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd, Command, Utilities
-from group_mail.apps.common.models import Group, CustomUser
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.models import Group
 
 
 def create_test_user(email, phone_number='0123456789', first_name='john', last_name='smith'):
