@@ -3,7 +3,7 @@ from django.conf import settings
 from group_mail.apps.common.errors import CustomException
 from group_mail.apps.mailman import mailman_cmds
 from group_mail.apps.group.group_manager import GroupManager
-from group_mail.apps.common.models import CustomUser
+from group_mail.apps.common.models import CustomUser, Email
 
 
 class Group(models.Model):
@@ -12,6 +12,7 @@ class Group(models.Model):
     name = models.CharField(max_length=MAX_LEN, unique=True)
     code = models.CharField(max_length=MAX_LEN)
     members = models.ManyToManyField(CustomUser, related_name='memberships')
+    emails = models.ManyToManyField(Email)
     admins = models.ManyToManyField(CustomUser)
 
     objects = GroupManager()
@@ -41,6 +42,9 @@ class Group(models.Model):
                 # create an account for the new user
                 member = CustomUser.objects.create_user(email=email)
             self.members.add(member)
+            email_obj = Email.objects.get(email=email)
+            self.emails.add(email_obj)
+            print email_obj
 
         if settings.MODIFY_MAILMAN_DB:
             try:

@@ -1,4 +1,4 @@
-from django.db import models, IntegrityError
+from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 from group_mail.apps.common.errors import CustomException
@@ -35,7 +35,7 @@ class CustomUser(User):
                 except mailman_cmds.MailmanError:
                     raise
 
-            self.memberships.add(group)
+            group.add_members([self.email])
 
     def leave_group(self, group):
         group.remove_members([self])
@@ -67,6 +67,26 @@ class CustomUser(User):
         if phone_number and not self.phone_number:
             self.phone_number = phone_number
         self.save()
+
+    def get_groups_by_email(self):
+        """
+        Returns a dict of the form:
+        {email1: [group1_1, group2_1, ...],
+        email2: [group1_2, group2_2, ...],
+        ...
+        }
+        This is a dictionary where each of the user's emails is a key,
+        associated with a value which is a list of groups to which that email
+        is subscribed.
+        """
+        result = {}
+        for email in self.email_set.all():
+            result[email] = []
+            for group in self.memberships.all():
+                if email in group.emails.all():
+                    result[email].append(group)
+        print 'result: ' + str(result)
+        return result
 
     """ Custom Exceptions """
 

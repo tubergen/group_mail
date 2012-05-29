@@ -18,12 +18,12 @@
   <form method="post" action="">
     {% csrf_token %}
     <input type="submit" value="Remove From Group">
-    {% for member in group.members.all %}
+    {% for email in group.emails.all %}
     <div>
       <label class="checkbox">
-        <input type="checkbox" name="removed_members" value="{{ member.email }}">
-        <span class="span4">{{ member.get_full_name }}&nbsp;</span>
-        <span>{{ member.email }}&nbsp;</span>
+        <input type="checkbox" name="removed_members" value="{{ email }}">
+        <span class="span4">{{ email.user.get_full_name }}&nbsp;</span>
+        <span>{{ email }}&nbsp;</span>
       </label>
     </div>
     {% endfor %}

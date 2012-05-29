@@ -1,5 +1,7 @@
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django.views.generic import TemplateView, ListView
+from django.views.generic import TemplateView
 
 
 def homepage_splitter(request):
@@ -15,11 +17,10 @@ def landing_page(request):
 
 @login_required
 def logged_in_homepage(request):
-    groups = request.user.memberships.all()
-    return ListView.as_view(
-            template_name='group/list.html',
-            queryset=groups,
-            context_object_name="group_list")(request)
+    groups_by_email = request.user.get_groups_by_email()
+    return render_to_response('group/list.html',
+            {'groups_by_email': groups_by_email},
+            context_instance=RequestContext(request))
 """
 class UserHomeView(DetailView):
 
