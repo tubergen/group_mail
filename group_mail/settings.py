@@ -177,7 +177,7 @@ LOGGING = {
 
 AUTHENTICATION_BACKENDS = (
     # Will cause request.user to return CustomUser objects
-    'group_mail.backends.auth_backends.CustomUserModelBackend',
+    # 'group_mail.backends.auth_backends.CustomUserModelBackend',
 
     'group_mail.backends.auth_backends.ModelBackend',
 )

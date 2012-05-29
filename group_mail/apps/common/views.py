@@ -15,7 +15,6 @@ def landing_page(request):
 
 @login_required
 def logged_in_homepage(request):
-    raise Exception(type(request.user))
     groups = request.user.memberships.all()
     return ListView.as_view(
             template_name='group/list.html',
