@@ -1,5 +1,6 @@
 from django import forms
-from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth import authenticate
+from django.contrib.auth.forms import SetPasswordForm, AuthenticationForm
 from group_mail.apps.common.models import CustomUser
 
 name_invalid = "This value may contain only letters, numbers, hyphens, apostrophes, and periods."
@@ -55,3 +56,41 @@ class CompleteAccountForm(SetPasswordForm, UserInfoForm):
         self.user.phone_number = self.cleaned_data['phone_number']
         # call SetPasswordForm's save()
         return super(CompleteAccountForm, self).__save__(commit)
+
+
+class LoginForm(AuthenticationForm):
+    def get_real_username(self, input_username):
+        """
+        Returns the actual username given by the user who either has a phone
+        number or email given by input_username. Returns input_username if
+        no such user could be found.
+        """
+        user = CustomUser.objects.get_user_or_none(email=input_username)
+        if not user:
+            user = CustomUser.objects.get_user_or_none(phone_number=input_username)
+
+        if user:
+            return user.username
+        else:
+            return input_username
+
+    def clean(self):
+        """
+        This is identical to the default implementation of AuthenticationForm,
+        except that we have special logic to get the username.
+        """
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        username = self.get_real_username(username)
+
+        if username and password:
+            self.user_cache = authenticate(username=username,
+                                           password=password)
+            if self.user_cache is None:
+                raise forms.ValidationError(
+                    self.error_messages['invalid_login'])
+            elif not self.user_cache.is_active:
+                raise forms.ValidationError(self.error_messages['inactive'])
+        self.check_for_test_cookie()
+        return self.cleaned_data
