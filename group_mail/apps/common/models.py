@@ -81,11 +81,7 @@ class CustomUser(User):
         """
         result = {}
         for email in self.email_set.all():
-            result[email] = []
-            for group in self.memberships.all():
-                if email in group.emails.all():
-                    result[email].append(group)
-        print 'result: ' + str(result)
+            result[email] = email.group_set.all()
         return result
 
     """ Custom Exceptions """
