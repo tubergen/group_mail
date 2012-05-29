@@ -68,7 +68,7 @@ class CustomUserManager(UserManager):
 
         return super(CustomUserManager, self).get(*args, **kwargs)
 
-    def get_user(self, **kwargs):
+    def get_user_or_none(self, **kwargs):
         """
         Get's and returns a user object according to field_dict, or returns
         None if no such user exists.
@@ -98,11 +98,11 @@ class CustomUserManager(UserManager):
         except ValidationError:
             raise
 
-        user = self.get_user(email=email)
+        user = self.get_user_or_none(email=email)
         if user:
             raise CustomUser.DuplicateEmail(email=email)
         else:
-            p_user = self.get_user(phone_number=phone_number)
+            p_user = self.get_user_or_none(phone_number=phone_number)
             if p_user:
                 """
                 We're trying to create a user with a new email but same phone number as
@@ -129,8 +129,8 @@ class CustomUserManager(UserManager):
         # we do the import here to avoid a circular dependency
         from group_mail.apps.common.models import CustomUser
 
-        user = self.get_user(email=email)
-        p_user = self.get_user(phone_number=phone_number)
+        user = self.get_user_or_none(email=email)
+        p_user = self.get_user_or_none(phone_number=phone_number)
 
         if user and p_user:
             if p_user.id != user.id:

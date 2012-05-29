@@ -32,6 +32,14 @@ class CreateUserForm(UserInfoForm):
         except CustomUser.DoesNotExist:
             return email
 
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data['phone_number']
+        try:
+            CustomUser.objects.get(phone_number=phone_number)
+            raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
+        except CustomUser.DoesNotExist:
+            return phone_number
+
 
 class CompleteAccountForm(SetPasswordForm, UserInfoForm):
     def __init__(self, user, *args, **kwargs):
