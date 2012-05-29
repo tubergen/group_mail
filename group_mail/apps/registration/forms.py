@@ -59,21 +59,6 @@ class CompleteAccountForm(SetPasswordForm, UserInfoForm):
 
 
 class LoginForm(AuthenticationForm):
-    def get_real_username(self, input_username):
-        """
-        Returns the actual username given by the user who either has a phone
-        number or email given by input_username. Returns input_username if
-        no such user could be found.
-        """
-        user = CustomUser.objects.get_user_or_none(email=input_username)
-        if not user:
-            user = CustomUser.objects.get_user_or_none(phone_number=input_username)
-
-        if user:
-            return user.username
-        else:
-            return input_username
-
     def clean(self):
         """
         This is identical to the default implementation of AuthenticationForm,
@@ -82,7 +67,7 @@ class LoginForm(AuthenticationForm):
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
 
-        username = self.get_real_username(username)
+        username = CustomUser.objects.get_real_username(username)
 
         if username and password:
             self.user_cache = authenticate(username=username,
