@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Create Group{% endblock %}
-{% block pagetitle %}Create Group{% endblock %}
+{% block title %}{{ type }} Group{% endblock %}
+{% block pagetitle %}{{ type }} Group{% endblock %}
 {% block content %}
 
 <form method="post" action="">
 {% csrf_token %}
   {% include "generic_fields.html" %}
-  <input type="submit" value="Create" />
+  <input type="submit" value="{{ type }}" />
 </form>
 
 {% endblock %}
