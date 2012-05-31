@@ -21,16 +21,3 @@ def logged_in_homepage(request):
     return render_to_response('group/list.html',
             {'groups_by_email': groups_by_email},
             context_instance=RequestContext(request))
-"""
-class UserHomeView(DetailView):
-
-    context_object_name = "user"
-    model = CustomUser
-
-    def get_context_data(self, **kwargs):
-        # Call the base implementation first to get a context
-        context = super(PublisherDetailView, self).get_context_data(**kwargs)
-        # Add in a QuerySet of all the books
-        context['group_list'] = Book.objects.all()
-        return context
-"""

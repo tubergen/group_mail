@@ -50,8 +50,8 @@ class GroupManager(models.Manager):
                 raise
 
         group = Group.objects.create(name=group_name,
-                                        code=group_code)
+                                    code=group_code)
 
-        group.members.add(creator)
-        group.admins.add(creator)
+        group.add_members([creator])
+        group.add_admin(creator)
         return group

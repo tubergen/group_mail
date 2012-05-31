@@ -1,9 +1,10 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from group_mail.apps.group.models import Group
 from django.http import HttpResponseRedirect
-from group_mail.apps.group.forms import CreateGroupForm, AddMembersForm
 from django.contrib.auth.decorators import login_required
+from group_mail.apps.group.models import Group
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.forms import CreateGroupForm, JoinGroupForm, AddMembersForm
 
 
 @login_required
@@ -67,6 +68,28 @@ def create_group(request):
     else:
         form = CreateGroupForm()
 
-    return render_to_response('group/create.html',
-                              {'create_group_form': form},
+    return render_to_response('group/create_or_join.html',
+                              {'form': form,
+                               'type': 'Create'},
+                              RequestContext(request))
+
+
+@login_required
+def join_group(request):
+    if request.method == 'POST':
+        form = JoinGroupForm(request.POST)
+        if form.is_valid():
+            group_name = form.cleaned_data['group_name']
+            group_code = form.cleaned_data['group_code']
+            try:
+                request.user.join_group(group_name, group_code)
+            except CustomUser.AlreadyMember:
+                pass
+            return HttpResponseRedirect('/group/%s' % group_name)
+    else:
+        form = JoinGroupForm()
+
+    return render_to_response('group/create_or_join.html',
+                              {'form': form,
+                               'type': 'Join'},
                               RequestContext(request))

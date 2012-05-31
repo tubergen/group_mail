@@ -149,10 +149,11 @@ def _exec_cmd(*args, **kwargs):
 
 
 def add_postfix_mysql_alias(list_name):
-    """ We have to add an alias to the postfix mysql db which maps
-        list_name@domain.com to list_Name@lists.domain.com to make mailman
-        and postfix cooperate. """
-
+    """
+    We have to add an alias to the postfix mysql db which maps
+    list_name@domain.com to list_Name@lists.domain.com to make mailman
+    and postfix cooperate.
+    """
     domain = settings.EMAIL_DOMAIN
     sql_args = {'from_list': list_name + '@' + domain,
                 'to_list':  list_name + '@lists.' + domain}
