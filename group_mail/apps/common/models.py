@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 from group_mail.apps.common.errors import CustomException
-from group_mail.apps.common.group_manager import GroupManager
 from group_mail.apps.common.custom_user_manager import CustomUserManager
 from group_mail.apps.mailman import mailman_cmds
 
@@ -14,6 +13,7 @@ class CustomUser(User):
     objects = CustomUserManager()
 
     def join_group(self, group_name, group_code):
+        from group_mail.apps.group.models import Group
         try:
             group = Group.objects.get(name=group_name)
         except Group.DoesNotExist:
@@ -35,7 +35,7 @@ class CustomUser(User):
                 except mailman_cmds.MailmanError:
                     raise
 
-            self.memberships.add(group)
+            group.add_members([self.email])
 
     def leave_group(self, group):
         group.remove_members([self])
@@ -48,18 +48,53 @@ class CustomUser(User):
         else:
             return False
 
+    def populate(self, email=None, first_name=None, last_name=None, phone_number=None):
+        if email:
+            # check if this account already has the email
+            try:
+                found_email = self.email_set.get(email=email)
+            except Email.DoesNotExist:
+                found_email = None
+
+            if not found_email:
+                # This will raise an IntegrityError if the email object already exists
+                Email.objects.create(email=email, user=self)
+
+        if first_name and not self.first_name:
+            self.first_name = first_name
+        if last_name and not self.last_name:
+            self.last_name = last_name
+        if phone_number and not self.phone_number:
+            self.phone_number = phone_number
+        self.save()
+
+    def get_groups_by_email(self):
+        """
+        Returns a dict of the form:
+        {email1: [group1_1, group2_1, ...],
+        email2: [group1_2, group2_2, ...],
+        ...
+        }
+        This is a dictionary where each of the user's emails is a key,
+        associated with a value which is a list of groups to which that email
+        is subscribed.
+        """
+        result = {}
+        for email in self.email_set.all():
+            result[email] = email.group_set.all()
+        return result
+
     """ Custom Exceptions """
 
     class _DuplicateField(CustomException):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
-                msg = 'A user with the %s %s already exists.' % (field, value)
+                msg = 'An account with the %s %s already exists.' % (field, value)
             super(CustomUser._DuplicateField, self).__init__(msg)
 
     class DuplicatePhoneNumber(_DuplicateField):
         def __init__(self, msg=None, phone_number=''):
-            super(CustomUser.DuplicatePhoneNumber, self).__init__(msg,
-                    'phone number', phone_number)
+            super(CustomUser.DuplicatePhoneNumber, self).__init__(msg, 'phone number', phone_number)
 
     class DuplicateEmail(_DuplicateField):
         def __init__(self, msg=None, email=''):
@@ -80,87 +115,9 @@ class CustomUser(User):
             super(CustomUser.InconsistentPhoneNumber, self).__init__(msg)
 
 
-class Group(models.Model):
-    MAX_LEN = 20  # max length of group name, code
-    ALLOWED_CHARS = "Only numbers and letters are allowed."
-    name = models.CharField(max_length=MAX_LEN, unique=True)
-    code = models.CharField(max_length=MAX_LEN)
-    members = models.ManyToManyField(CustomUser, related_name='memberships')
-    admins = models.ManyToManyField(CustomUser)
-
-    objects = GroupManager()
+class Email(models.Model):
+    email = models.EmailField(unique=True)
+    user = models.ForeignKey(CustomUser, related_name='email_set')
 
     def __unicode__(self):
-        return self.name
-
-    def remove_members(self, member_email_list):
-        for email in member_email_list:
-            try:
-                member = CustomUser.objects.get(email=email)
-                self.members.remove(member)
-            except CustomUser.DoesNotExist:
-                pass
-
-        if settings.MODIFY_MAILMAN_DB:
-            try:
-                mailman_cmds.remove_members(self.name, member_email_list)
-            except mailman_cmds.MailmanError:
-                raise
-
-    def add_members(self, member_email_list):
-        for email in member_email_list:
-            try:
-                member = CustomUser.objects.get(email=email)
-            except CustomUser.DoesNotExist:
-                # create an account for the new user
-                member = CustomUser.objects.create_user(email=email)
-            self.members.add(member)
-
-        if settings.MODIFY_MAILMAN_DB:
-            try:
-                mailman_cmds.add_members(self.name, member_email_list)
-            except mailman_cmds.MailmanError:
-                raise
-
-    """ Custom Exceptions """
-
-    class AlreadyExists(CustomException):
-        def __init__(self, msg=None, name=''):
-            if msg is None:
-                msg = "A group with name '%s' already exists." % name
-            super(Group.AlreadyExists, self).__init__(msg)
-
-    class _FieldTooLong(CustomException):
-        def __init__(self, msg=None, field='field unspecified', value=''):
-            if msg is None:
-                msg = 'The group %s may not exceed %d characters.' % \
-                        (field, Group.MAX_LEN)
-            super(Group._FieldTooLong, self).__init__(msg)
-
-    class NameTooLong(_FieldTooLong):
-        def __init__(self, msg=None, name=''):
-            super(Group.NameTooLong, self).__init__(msg, 'name', name)
-
-    class CodeTooLong(_FieldTooLong):
-        def __init__(self, msg=None, code=''):
-            super(Group.CodeTooLong, self).__init__(msg, 'code', code)
-
-    class CodeInvalid(CustomException):
-        def __init__(self, msg=None, name='', code=''):
-            if msg is None:
-                msg = 'The group code %s is invalid for the group %s' % \
-                        (code, name)
-
-    class _FieldNotAllowed(CustomException):
-        def __init__(self, msg=None, field='field unspecified', value=''):
-            if msg is None:
-                msg = "The group %s may only contain letters and numbers." % field
-            super(Group._FieldNotAllowed, self).__init__(msg)
-
-    class NameNotAllowed(_FieldNotAllowed):
-        def __init__(self, msg=None, name=''):
-            super(Group.NameNotAllowed, self).__init__(msg, 'name', name)
-
-    class CodeNotAllowed(_FieldNotAllowed):
-        def __init__(self, msg=None, code=''):
-            super(Group.CodeNotAllowed, self).__init__(msg, 'code', code)
+        return self.email

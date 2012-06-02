@@ -1,5 +1,6 @@
 from django import forms
-from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth import authenticate
+from django.contrib.auth.forms import SetPasswordForm, AuthenticationForm
 from group_mail.apps.common.models import CustomUser
 
 name_invalid = "This value may contain only letters, numbers, hyphens, apostrophes, and periods."
@@ -17,20 +18,32 @@ class UserInfoForm(forms.Form):
             'required': 'This field is required. %s' % phone_number_help})
 
 
-class CreateUserForm(UserInfoForm):
+class UserEmailForm(forms.Form):
     email = forms.EmailField(max_length=CustomUser.MAX_LEN)
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        try:
+            CustomUser.objects.get(email=email)
+            raise CustomUser.DuplicateEmail(email=email)
+        except CustomUser.DoesNotExist:
+            return email
+
+
+class CreateUserForm(UserInfoForm, UserEmailForm):
     """
     # remove password field for now
     password = forms.CharField(max_length=CustomUser.MAX_LEN,
             widget=forms.PasswordInput)
     """
-    def clean_email(self):
-        email = self.cleaned_data['email']
+
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data['phone_number']
         try:
-            CustomUser.objects.get(email=email)
-            raise forms.ValidationError('A user with that email already exists.')
+            CustomUser.objects.get(phone_number=phone_number)
+            raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
         except CustomUser.DoesNotExist:
-            return email
+            return phone_number
 
 
 class CompleteAccountForm(SetPasswordForm, UserInfoForm):
@@ -42,9 +55,31 @@ class CompleteAccountForm(SetPasswordForm, UserInfoForm):
         super(CompleteAccountForm, self).__init__(user, *args, **kwargs)
 
     def __save__(self, commit=True):
-        raise Exception
         self.user.first_name = self.cleaned_data['first_name']
         self.user.last_name = self.cleaned_data['last_name']
         self.user.phone_number = self.cleaned_data['phone_number']
         # call SetPasswordForm's save()
         return super(CompleteAccountForm, self).__save__(commit)
+
+
+class LoginForm(AuthenticationForm):
+    def clean(self):
+        """
+        This is identical to the default implementation of AuthenticationForm,
+        except that we have special logic to get the username.
+        """
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        username = CustomUser.objects.get_real_username(username)
+
+        if username and password:
+            self.user_cache = authenticate(username=username,
+                                           password=password)
+            if self.user_cache is None:
+                raise forms.ValidationError(
+                    self.error_messages['invalid_login'])
+            elif not self.user_cache.is_active:
+                raise forms.ValidationError(self.error_messages['inactive'])
+        self.check_for_test_cookie()
+        return self.cleaned_data

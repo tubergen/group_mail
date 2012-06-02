@@ -137,7 +137,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
+    'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'django_twilio',
@@ -175,9 +175,11 @@ LOGGING = {
     }
 }
 
-# Will cause request.user to return CustomUser objects
 AUTHENTICATION_BACKENDS = (
+    # Will cause request.user to return CustomUser objects
     'group_mail.backends.auth_backends.CustomUserModelBackend',
+
+    'group_mail.backends.auth_backends.ModelBackend',
 )
 
 # Will cause request.user to return CustomUser objects

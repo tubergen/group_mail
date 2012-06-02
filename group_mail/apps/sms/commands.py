@@ -1,8 +1,8 @@
 from twilio.twiml import Response
 from django.core.exceptions import ValidationError
 from django.contrib.sites.models import Site
-from group_mail.apps.common.models import CustomUser, Group
-#  from django.http import HttpResponse
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.models import Group
 from group_mail.apps.mailman import mailman_cmds
 
 MAX_SMS_LEN = 160
@@ -40,8 +40,10 @@ class Utilities(object):
             domain = Site.objects.get_current().domain
             resp = self.respond(str(e), ' Go to %s, log in or create an account, and' % domain +
                     ' go to you profile to change the phone number.')
-        except CustomUser.DuplicatePhoneNumber as e:
-            resp = self.respond(str(e) + ' TODO: This response is deprecated; needs to be removed/fixed.')
+        except CustomUser.DuplicateEmail:
+            raise  # this case should never arise. we should get the user with that email.
+        except CustomUser.DuplicatePhoneNumber:
+            raise  # this case should never arise. we shuold get the user with that phone number.
         except ValidationError as e:
             # TODO: validation error is no longer specific to email. This
             # could be another error. We need a way to be more certain.

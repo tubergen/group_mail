@@ -1,6 +1,7 @@
 """ This isn't a real app. The only purpose is to populate the db
     on local development servers. """
-from group_mail.apps.common.models import Group, CustomUser
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.models import Group
 from django.http import HttpResponse
 
 
@@ -12,16 +13,17 @@ def populate(request):
     for i in xrange(0, num_users):
         name = 'user%d' % i
         email = '%s@gmail.com' % name
-        # phone_number = '703555333%d' % i
+        phone_number = '111222333%d' % i
         CustomUser.objects.create_user(email, password,
-                '%s_first_name' % name, '%s_last_name' % name)
+                '%s_first_name' % name, '%s_last_name' % name, phone_number)
 
     users = CustomUser.objects.all()
+    emails = [u.email for u in CustomUser.objects.all()]
     for i in xrange(0, num_groups):
         group_name = 'group%d' % i
         group_code = 'group_code%d' % i
         group = Group.objects.create_group(users[i], group_name, group_code)
-        group.members.add(*users)
+        group.add_members(emails)
 
     groups = Group.objects.all()
     resp = 'Created users...<br>'

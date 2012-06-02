@@ -8,7 +8,11 @@
 
     {% block head %}{% endblock %}
   </head>
+  {% if user.is_authenticated %}
   <body>
+  {% else %}
+  <body class='logged-out-body'>
+  {% endif %}
     {% block header %}
     {% include "navbar/navbar.html" %}
     {% endblock %}

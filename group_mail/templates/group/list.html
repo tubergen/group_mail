@@ -4,9 +4,12 @@
 {% block pagetitle %}Your Groups{% endblock %}
 
 {% block content %}
-    <ul>
-        {% for group in group_list %}
+  <ul>
+    {% for email, group_list in groups_by_email.items %}
+    <h3>{{ email }}</h3>
+      {% for group in group_list %}
         <li><a href="/group/{{group.name}}">{{group.name}}</a></li>
-        {% endfor %}
-    </ul>
+      {% endfor %}
+    {% endfor %}
+  </ul>
 {% endblock %}

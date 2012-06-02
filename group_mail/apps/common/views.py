@@ -1,5 +1,10 @@
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django.views.generic import TemplateView, ListView
+from django.contrib.auth import login, authenticate
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.views import create_group, join_group
+from group_mail.apps.group.forms import CreateOrJoinGroupForm
 
 
 def homepage_splitter(request):
@@ -10,26 +15,33 @@ def homepage_splitter(request):
 
 
 def landing_page(request):
-    return TemplateView.as_view(template_name='landing.html')(request)
+    if request.method == 'POST' and 'submit' in request.POST:
+        form = CreateOrJoinGroupForm(request.POST)
+        if form.is_valid():
+            user = CustomUser.objects.create_user(email=form.cleaned_data['email'])
+            print authenticate(username=user.email, password=None)
+            login(request, user)
+            """
+            Now that we've created the user from the email, we pass off the rest
+            of the validation to the dedicated create / join group functions.
+            """
+            if request.POST['submit'] == 'Create':
+                return create_group(request)
+            elif request.POST['submit'] == 'Join':
+                return join_group(request)
+    else:
+        form = CreateOrJoinGroupForm()
+
+    return render_to_response('landing.html',
+                              {'form': form,
+                               'type_create': 'Create',
+                               'type_join': 'Join'},
+                              RequestContext(request))
 
 
 @login_required
 def logged_in_homepage(request):
-    groups = request.user.memberships.all()
-    return ListView.as_view(
-            template_name='group/list.html',
-            queryset=groups,
-            context_object_name="group_list")(request)
-"""
-class UserHomeView(DetailView):
-
-    context_object_name = "user"
-    model = CustomUser
-
-    def get_context_data(self, **kwargs):
-        # Call the base implementation first to get a context
-        context = super(PublisherDetailView, self).get_context_data(**kwargs)
-        # Add in a QuerySet of all the books
-        context['group_list'] = Book.objects.all()
-        return context
-"""
+    groups_by_email = request.user.get_groups_by_email()
+    return render_to_response('group/list.html',
+            {'groups_by_email': groups_by_email},
+            context_instance=RequestContext(request))

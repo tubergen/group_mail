@@ -10,7 +10,7 @@ class GroupManager(models.Manager):
 
     # we do import within methods to avoid a circular dependency
     def validate_group_name(self, group_name):
-        from group_mail.apps.common.models import Group
+        from group_mail.apps.group.models import Group
         try:
             Group.objects.get(name=group_name)
             raise Group.AlreadyExists(name=group_name)
@@ -23,14 +23,14 @@ class GroupManager(models.Manager):
             raise Group.NameNotAllowed(name=group_name)
 
     def validate_group_code(self, group_code):
-        from group_mail.apps.common.models import Group
+        from group_mail.apps.group.models import Group
         if len(group_code) > Group.MAX_LEN:
             raise Group.CodeTooLong(code=group_code)
         elif not re.match(GroupManager.valid_pattern, group_code):
             raise Group.CodeNotAllowed(code=group_code)
 
     def create_group(self, creator, group_name, group_code):
-        from group_mail.apps.common.models import Group
+        from group_mail.apps.group.models import Group
 
         group_name = group_name.strip()
         group_code = group_code.strip()
@@ -50,8 +50,8 @@ class GroupManager(models.Manager):
                 raise
 
         group = Group.objects.create(name=group_name,
-                                        code=group_code)
+                                    code=group_code)
 
-        group.members.add(creator)
-        group.admins.add(creator)
+        group.add_members([creator])
+        group.add_admin(creator)
         return group
