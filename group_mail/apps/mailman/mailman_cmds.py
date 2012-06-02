@@ -11,63 +11,70 @@ from django.conf import settings
 
 
 def to_listname(group):
-    return 'g' + group._id
+    name = 'g%d' % group._id
+    print '\n\n' + name + '\n\n'
+    return name
 
 
-def newlist(list_name, owner_email, list_password):
-    args = [_get_script_dir('newlist'), list_name, owner_email, list_password]
+def newlist(group, owner_email, list_password):
+    listname = to_listname(group)
+    args = [_get_script_dir('newlist'), listname, owner_email, list_password]
     errors = _exec_cmd(*args, stdin_hook='\n')
     if not errors:
         # mailman doesn't automatically add the list creator as a member, but
         # we want to
-        errors = add_members(list_name, owner_email)
+        errors = add_members(listname, owner_email)
         if not errors:
-            add_postfix_mysql_alias(list_name)
+            add_postfix_mysql_alias(listname)
     else:
         raise MailmanError(errors)
 
 
-def remove_members(list_name, members):
+def remove_members(group, members):
     """
     members should be a single string or a list of strings, where each string is
-    a members' email which will be removed from list_name.
+    a members' email which will be removed from listname.
     """
+    listname = to_listname(group)
     members = list(members)  # in case members is a single string
-    args = ['remove_members', list_name] + members
+    args = ['remove_members', listname] + members
     errors = _exec_cmd(*args)
     if errors:
         raise MailmanError(errors)
 
 
-def add_members(list_name, members):
+def add_members(group, members):
     """
     members should be a list or newline-delimited string of emails to add
-    to list_name. e.g.: 'brian@gmail.com\nellie@gmail.com\nanne@gmail.com'
+    to listname. e.g.: 'brian@gmail.com\nellie@gmail.com\nanne@gmail.com'
     """
+    listname = to_listname(group)
     if isinstance(members, list):
         members = '\n'.join(members)
     elif not isinstance(members, basestring):
         raise TypeError('members must be a list or string')
 
-    args = [_get_script_dir('add_members'), '-r', '-', list_name]
+    args = [_get_script_dir('add_members'), '-r', '-', listname]
     errors = _exec_cmd(*args, stdin_hook=members)
     if errors:
         raise MailmanError(errors)
 
 
-def dumpdb(list_name):
+def dumpdb(group):
     """
     this will throw an IOError if the list doesn't exist. Not robust enough
     for use in production.
     """
-    args = [_get_script_dir('dumpdb'), _get_list_dir(list_name) + '/config.pck']
+    listname = to_listname(group)
+    args = [_get_script_dir('dumpdb'), _get_list_dir(listname) + '/config.pck']
     errors = _exec_cmd(*args)
     if errors:
         raise MailmanError(errors)
 
 
-def rmlist(list_name):
-    args = [_get_script_dir('rmlist'), '-a', _get_list_dir(list_name)]
+def rmlist(group):
+    listname = to_listname(group)
+    args = [_get_script_dir('rmlist'), '-a', _get_list_dir(listname)]
     errors = _exec_cmd(*args)
     if errors:
         raise MailmanError(errors)
@@ -101,8 +108,8 @@ def _get_script_dir(script_name):
     return ROOT_MAILMAN_DIR + '/bin/' + script_name
 
 
-def _get_list_dir(list_name):
-    return ROOT_MAILMAN_DIR + '/lists/' + list_name
+def _get_list_dir(listname):
+    return ROOT_MAILMAN_DIR + '/lists/' + listname
 
 
 def _get_errors(result):
@@ -152,15 +159,15 @@ def _exec_cmd(*args, **kwargs):
         return [e]
 
 
-def add_postfix_mysql_alias(list_name):
+def add_postfix_mysql_alias(listname):
     """
     We have to add an alias to the postfix mysql db which maps
-    list_name@domain.com to list_Name@lists.domain.com to make mailman
+    listname@domain.com to list_Name@lists.domain.com to make mailman
     and postfix cooperate.
     """
     domain = settings.EMAIL_DOMAIN
-    sql_args = {'from_list': list_name + '@' + domain,
-                'to_list':  list_name + '@lists.' + domain}
+    sql_args = {'from_list': listname + '@' + domain,
+                'to_list':  listname + '@lists.' + domain}
 
     db = MySQLdb.connect(host='localhost', user='root', passwd='root',
             db='maildb')
@@ -175,18 +182,24 @@ def add_postfix_mysql_alias(list_name):
 ##########################################################################
 
 
+class TestGroup():
+    def __init__(self, id=1):
+        self._id = id
+
+
 def main():
+    group = TestGroup()
     if len(sys.argv) > 1 and sys.argv[1] == 'add':
-        add_members('alist', 'brian.tubergengmail.com\ntubergen@princeton.edu')
+        add_members(group, 'brian.tubergengmail.com\ntubergen@princeton.edu')
     elif len(sys.argv) > 1 and sys.argv[1] == 'new':
-        newlist('alist', 'tubergen@princeton.edu', 'hack')
+        newlist(group, 'tubergen@princeton.edu', 'hack')
     elif len(sys.argv) > 1 and sys.argv[1] == 'rem':
-        remove_members('alist', ['brian.tubergen@gmail.com',
+        remove_members(group, ['brian.tubergen@gmail.com',
                                  'tubergen@princeton.edu'])
     elif len(sys.argv) > 1 and sys.argv[1] == 'dump':
-        dumpdb('alist')
+        dumpdb(group)
     elif len(sys.argv) > 1 and sys.argv[1] == 'rmlist':
-        rmlist('alist')
+        rmlist(group)
 
 if __name__ == '__main__':
     main()
