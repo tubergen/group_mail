@@ -1,6 +1,8 @@
 from django import forms
+from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.models import Group
 from group_mail.apps.group.fields import MultiEmailField
+from group_mail.apps.registration.forms import UserEmailForm
 
 
 class GroupForm(forms.Form):
@@ -41,6 +43,15 @@ class JoinGroupForm(GroupForm):
             if self.group.code != group_code:
                 raise Group.CodeInvalid(name=self.group.name, code=group_code)
         return group_code
+
+
+class CreateOrJoinGroupForm(GroupForm, UserEmailForm):
+    def clean_email(self):
+        try:
+            return super(CreateOrJoinGroupForm, self).clean_email()
+        except CustomUser.DuplicateEmail as e:
+            e.messages[0] += ' Please log in if that account belongs to you.'
+            raise
 
 
 class CreateGroupNavbarForm(CreateGroupForm):

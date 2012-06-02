@@ -89,7 +89,7 @@ class CustomUser(User):
     class _DuplicateField(CustomException):
         def __init__(self, msg=None, field='field unspecified', value=''):
             if msg is None:
-                msg = 'A user with the %s %s already exists.' % (field, value)
+                msg = 'An account with the %s %s already exists.' % (field, value)
             super(CustomUser._DuplicateField, self).__init__(msg)
 
     class DuplicatePhoneNumber(_DuplicateField):

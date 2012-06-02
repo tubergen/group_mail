@@ -18,20 +18,24 @@ class UserInfoForm(forms.Form):
             'required': 'This field is required. %s' % phone_number_help})
 
 
-class CreateUserForm(UserInfoForm):
+class UserEmailForm(forms.Form):
     email = forms.EmailField(max_length=CustomUser.MAX_LEN)
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        try:
+            CustomUser.objects.get(email=email)
+            raise CustomUser.DuplicateEmail(email=email)
+        except CustomUser.DoesNotExist:
+            return email
+
+
+class CreateUserForm(UserInfoForm, UserEmailForm):
     """
     # remove password field for now
     password = forms.CharField(max_length=CustomUser.MAX_LEN,
             widget=forms.PasswordInput)
     """
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        try:
-            CustomUser.objects.get(email=email)
-            raise forms.ValidationError('A user with that email already exists.')
-        except CustomUser.DoesNotExist:
-            return email
 
     def clean_phone_number(self):
         phone_number = self.cleaned_data['phone_number']

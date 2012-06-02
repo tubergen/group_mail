@@ -1,7 +1,10 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django.views.generic import TemplateView
+from django.contrib.auth import login, authenticate
+from group_mail.apps.common.models import CustomUser
+from group_mail.apps.group.views import create_group, join_group
+from group_mail.apps.group.forms import CreateOrJoinGroupForm
 
 
 def homepage_splitter(request):
@@ -12,7 +15,28 @@ def homepage_splitter(request):
 
 
 def landing_page(request):
-    return TemplateView.as_view(template_name='landing.html')(request)
+    if request.method == 'POST' and 'submit' in request.POST:
+        form = CreateOrJoinGroupForm(request.POST)
+        if form.is_valid():
+            user = CustomUser.objects.create_user(email=form.cleaned_data['email'])
+            print authenticate(username=user.email, password=None)
+            login(request, user)
+            """
+            Now that we've created the user from the email, we pass off the rest
+            of the validation to the dedicated create / join group functions.
+            """
+            if request.POST['submit'] == 'Create':
+                return create_group(request)
+            elif request.POST['submit'] == 'Join':
+                return join_group(request)
+    else:
+        form = CreateOrJoinGroupForm()
+
+    return render_to_response('landing.html',
+                              {'form': form,
+                               'type_create': 'Create',
+                               'type_join': 'Join'},
+                              RequestContext(request))
 
 
 @login_required
