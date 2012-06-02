@@ -10,6 +10,10 @@ import MySQLdb
 from django.conf import settings
 
 
+def to_listname(group):
+    return 'g' + group._id
+
+
 def newlist(list_name, owner_email, list_password):
     args = [_get_script_dir('newlist'), list_name, owner_email, list_password]
     errors = _exec_cmd(*args, stdin_hook='\n')
