@@ -19,8 +19,8 @@ def landing_page(request):
         form = CreateOrJoinGroupForm(request.POST)
         if form.is_valid():
             user = CustomUser.objects.create_user(email=form.cleaned_data['email'])
-            print authenticate(username=user.email, password=None)
-            login(request, user)
+            auth_user = authenticate(username=user.email, password=None)
+            login(request, auth_user)
             """
             Now that we've created the user from the email, we pass off the rest
             of the validation to the dedicated create / join group functions.
