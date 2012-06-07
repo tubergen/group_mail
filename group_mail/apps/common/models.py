@@ -22,7 +22,8 @@ class CustomUser(User):
         if group_code != group.code:
             raise Group.CodeInvalid()
 
-        if group in self.memberships.all():
+        email_obj = Email.objects.get(email=self.email)
+        if email_obj in group.emails.all():
             raise CustomUser.AlreadyMember(self.email, group_name)
         else:
             # At this point, we suspect the join group cmd is valid
@@ -38,7 +39,7 @@ class CustomUser(User):
             group.add_members([self.email])
 
     def leave_group(self, group):
-        group.remove_members([self])
+        group.remove_members([self.email])
 
     def is_complete(self):
         """ returns true if the CustomUser has a complete account
@@ -67,6 +68,13 @@ class CustomUser(User):
         if phone_number and not self.phone_number:
             self.phone_number = phone_number
         self.save()
+
+    def get_memberships(self):
+        memberships = []
+        for group_list in self.get_groups_by_email().values():
+            for group in group_list:
+                memberships.append(group)
+        return memberships
 
     def get_groups_by_email(self):
         """

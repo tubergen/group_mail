@@ -13,7 +13,7 @@ settings.configure(
 import sys
 print sys.path
 from group_mail.apps.common.models import CustomUser
-from group_mail.apps.group.models import Group
+from group_mail.apps.group.models import Email
 from group_mail.apps.mailman.mailman_cmds import to_listname
 
 
@@ -40,13 +40,12 @@ def redirect_list(msg, data):
 
 def _get_real_listname(sender, listname):
     try:
-        user = CustomUser.objects.get(email=sender)
+        email_obj = Email.objects.get(email=sender)
     except CustomUser.DoesNotExist:
-        syslog('error', "custom user object didn't exist")
+        syslog('error', "email object for sender object didn't exist")
         return None
     try:
-        group = user.memberships.get(name=listname)
-        return to_listname(group)
-    except Group.DoesNotExist:
-        syslog('error', "group object didn't exist")
+        return to_listname(email_obj.group)
+    except Email.DoesNotExist:
+        syslog('error', "group associated with email object didn't exist")
         return None

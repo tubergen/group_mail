@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from group_mail.apps.common.models import CustomUser, Email
+from group_mail.apps.group.models import Group
 
 
 class CustomUserTest(TestCase):
@@ -51,6 +52,25 @@ class CustomUserTest(TestCase):
                     'u1 has wrong email set len')
             self.assertEqual(len(u2.email_set.all()), 1, \
                     'u2 has wrong email set len')
+
+    def test_get_memberships(self):
+        u = CustomUser.objects.create_user(**self.kwargs)
+        groups = {'g1': {'creator': u, 'group_name': 'name1', 'group_code': 'code1'},
+                'g2': {'creator': u, 'group_name': 'name2', 'group_code': 'code2'}}
+
+        g1 = Group.objects.create_group(**groups['g1'])
+        g2 = Group.objects.create_group(**groups['g2'])
+
+        email_obj = Email.objects.get(user=u)
+        self.assertTrue(email_obj in g1.emails.all(), "group 1 is missing the user's email")
+        self.assertTrue(email_obj in g2.emails.all(), "group 2 is missing the user's email")
+
+        memberships = u.get_memberships()
+        print memberships
+        self.assertTrue((g1.id == memberships[0].id) or (g2.id == memberships[0].id), \
+                "user is missing a group")
+        self.assertTrue((g1.id == memberships[1].id) or (g2.id == memberships[1].id), \
+                "user is missing a group")
 
 
 class GetMethodTest(TestCase):

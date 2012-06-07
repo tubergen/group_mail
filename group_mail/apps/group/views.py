@@ -14,7 +14,7 @@ def group_info(request, group_name):
     except Group.DoesNotExist:
         return HttpResponseRedirect('/')
 
-    if request.user not in group.members.all():
+    if request.user not in group.get_members():
         return HttpResponseRedirect('/')
 
     errors = []

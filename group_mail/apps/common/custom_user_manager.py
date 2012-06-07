@@ -98,6 +98,9 @@ class CustomUserManager(UserManager):
         else:
             return input_username
 
+    def create(self):
+        raise Exception('CustomUser.objects.create() is unsupported')
+
     def create_user(self, email, password=None, first_name=None, last_name=None, phone_number=None):
         """
         Creates a CustomUser with the values given by the parameters and returns
@@ -123,11 +126,13 @@ class CustomUserManager(UserManager):
                 """
                 raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
 
+        # create the user
         user = super(CustomUserManager, self).create_user(
                 username=email,
                 email=email,
                 password=password)
         user.populate(email, first_name, last_name, phone_number)
+
         self.send_welcome_email(email)
         return user
 

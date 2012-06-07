@@ -11,7 +11,8 @@ class Group(models.Model):
     ALLOWED_CHARS = "Only numbers and letters are allowed."
     name = models.CharField(max_length=MAX_LEN, unique=True)
     code = models.CharField(max_length=MAX_LEN)
-    members = models.ManyToManyField(CustomUser, related_name='memberships')
+    # member management should go through add_members() and remove_members()
+    # members = models.ManyToManyField(CustomUser, related_name='memberships')
     emails = models.ManyToManyField(Email)
     admins = models.ManyToManyField(CustomUser)
 
@@ -22,12 +23,6 @@ class Group(models.Model):
 
     def remove_members(self, member_email_list):
         for email in member_email_list:
-            try:
-                member = CustomUser.objects.get(email=email)
-                self.members.remove(member)
-            except CustomUser.DoesNotExist:
-                pass
-
             try:
                 email_obj = Email.objects.get(email=email)
                 self.emails.remove(email_obj)
@@ -43,11 +38,10 @@ class Group(models.Model):
     def add_members(self, member_email_list):
         for email in member_email_list:
             try:
-                member = CustomUser.objects.get(email=email)
+                CustomUser.objects.get(email=email)
             except CustomUser.DoesNotExist:
                 # create an account for the new user
-                member = CustomUser.objects.create_user(email=email)
-            self.members.add(member)
+                CustomUser.objects.create_user(email=email)
             email_obj = Email.objects.get(email=email)
             self.emails.add(email_obj)
 
@@ -57,8 +51,16 @@ class Group(models.Model):
             except mailman_cmds.MailmanError:
                 raise
 
+    def get_members(self):
+        return [email_obj.user for email_obj in self.emails.all()]
+
     def add_admin(self, admin):
-        if admin not in self.members.all():
+        try:
+            admin_email = Email.objects.get(email=admin.email)
+        except Email.DoesNotExist:
+            raise CustomException('Admin has invalid email')
+
+        if admin_email not in self.emails.all():
             raise CustomException('Group admin not a member of group.')
         self.admins.add(admin)
 

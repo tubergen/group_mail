@@ -11,11 +11,10 @@ from group_mail.apps.group.models import Group
 
 
 def create_test_user(email, phone_number='0123456789', first_name='john', last_name='smith'):
-    return CustomUser.objects.create(
-            username=email,
+    return CustomUser.objects.create_user(
+            email=email,
             first_name=first_name,
             last_name=last_name,
-            email=email,
             phone_number=phone_number)
 
 
@@ -76,12 +75,23 @@ class CreateGroupCmdTest(_CmdTestCase):
         self.assertEqual(g.name, self.sms_fields[1], 'Group has incorrect name')
         self.assertEqual(g.code, self.sms_fields[2], 'Group has incorrect code')
 
-        user = CustomUser.objects.get(email=self.sms_fields[3])
-        members = g.members.all()
-        self.assertTrue(len(members) == 1, 'Group has incorrect number of members')
-        self.assertTrue(members[0].username == user.username, 'Group has incorrect member')
+        # test that we've successfully created a valid email object associated
+        # with the group
+        email = self.sms_fields[3]
+        email_objs = g.emails.all()
+        self.assertTrue(len(email_objs) == 1, 'Group has incorrect number of emails')
+        self.assertTrue(email_objs[0].email == email, 'Group has incorrect email')
 
-        memberships = user.memberships.all()
+        # test that the user associated with the email is also associated with
+        # that valid email object
+        user = CustomUser.objects.get(email=email)
+        email_set = user.email_set.all()
+        self.assertTrue(len(email_set) == 1, 'User has incorrect number of emails')
+        self.assertTrue(email_set[0].id == email_objs[0].id, "User's email is incorrect")
+
+        # this test is probably redundant, but nonetheless: test that the
+        # user has the proper number of memberships
+        memberships = user.get_memberships()
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == g.name, "User's group is incorrect")
 
@@ -152,16 +162,19 @@ class JoinGroupCmdTest(_CmdTestCase):
         self.assertTrue(response.find('Success') != -1, 'Success response not returned')
 
         user = CustomUser.objects.get(email=self.sms_fields[3])
-        members = self.group.members.all()
+        email_objs = self.group.emails.all()
 
-        # ensure the group has 2 members: the creator and the new joiner
-        self.assertTrue(len(members) == 2, 'Group has incorrect number of members')
-        self.assertTrue((members[0].username == user.username) or
-                (members[1].username == user.username), "Group doesn't have newly joined member")
-        self.assertTrue((members[0].username == self.group_creator.username) or
-                (members[1].username == self.group_creator.username), "Group doesn't have original creator")
+        # test that the group has 2 emails: the creator's and the new joiner's
+        self.assertTrue(len(email_objs) == 2, 'Group has incorrect number of emails')
+        self.assertTrue((email_objs[0].email == user.email) or
+                (email_objs[1].email == user.email), \
+                        "Group doesn't have newly joined member's email")
+        self.assertTrue((email_objs[0].email == self.group_creator.email) or
+                (email_objs[1].email == self.group_creator.email), \
+                        "Group doesn't have original creator's email")
 
-        memberships = user.memberships.all()
+        # test that the user has the proper number of memberships
+        memberships = user.get_memberships()
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == self.group.name, "User's group is incorrect")
 
@@ -172,16 +185,15 @@ class JoinGroupCmdTest(_CmdTestCase):
                 'Group-does-not-exist response not returned')
 
         user = CustomUser.objects.get(email=self.sms_fields[3])
-        members = self.group.members.all()
+        email_objs = self.group.emails.all()
 
-        # ensure the group has 1 members: the creator
-        self.assertTrue(len(members) == 1, 'Group has incorrect number of members')
-        self.assertTrue(members[0].username == self.group_creator.username,
-                "Group doesn't have original creator")
+        # ensure the group has 1 email: the creator's
+        self.assertTrue(len(email_objs) == 1, 'Group has incorrect number of emails')
+        self.assertTrue(email_objs[0].email == self.group_creator.email,
+                "Group doesn't have original creator's email")
 
         # ensure the user isn't in the group
-        memberships = user.memberships.all()
-        self.assertTrue(len(memberships) == 0, 'User has incorrect number of memberships')
+        self.assertTrue(len(user.get_memberships()) == 0, 'User has incorrect number of memberships')
 
     def test_group_code_incorrect(self):
         self.sms_fields[2] = 'incorrect_code'
@@ -190,16 +202,15 @@ class JoinGroupCmdTest(_CmdTestCase):
                 'Incorrect-code response not returned')
 
         user = CustomUser.objects.get(email=self.sms_fields[3])
-        members = self.group.members.all()
+        email_objs = self.group.emails.all()
 
-        # ensure the group has 1 members: the creator
-        self.assertTrue(len(members) == 1, 'Group has incorrect number of members')
-        self.assertTrue(members[0].username == self.group_creator.username,
-                "Group doesn't have original creator")
+        # ensure the group has 1 email: the creator's
+        self.assertTrue(len(email_objs) == 1, 'Group has incorrect number of emails')
+        self.assertTrue(email_objs[0].email == self.group_creator.email,
+                "Group doesn't have original creator's email")
 
         # ensure the user isn't in the group
-        memberships = user.memberships.all()
-        self.assertTrue(len(memberships) == 0, 'User has incorrect number of memberships')
+        self.assertTrue(len(user.get_memberships()) == 0, 'User has incorrect number of memberships')
 
     def test_already_a_member(self):
         self.cmd.execute(self.sms_fields, self.from_number)
@@ -208,16 +219,19 @@ class JoinGroupCmdTest(_CmdTestCase):
                 'Already-a-member response not returned')
 
         user = CustomUser.objects.get(email=self.sms_fields[3])
-        members = self.group.members.all()
+        email_objs = self.group.emails.all()
 
-        # ensure the group has 2 members (and no more): the creator and the new joiner
-        self.assertTrue(len(members) == 2, 'Group has incorrect number of members')
-        self.assertTrue((members[0].username == user.username) or
-                (members[1].username == user.username), "Group doesn't have newly joined member")
-        self.assertTrue((members[0].username == self.group_creator.username) or
-                (members[1].username == self.group_creator.username), "Group doesn't have original creator")
+        # test that the group has exactly 2 emails: the creator's and the new joiner's
+        self.assertTrue(len(email_objs) == 2, 'Group has incorrect number of emails')
+        self.assertTrue((email_objs[0].email == user.email) or
+                (email_objs[1].email == user.email), \
+                        "Group doesn't have newly joined member's email")
+        self.assertTrue((email_objs[0].email == self.group_creator.email) or
+                (email_objs[1].email == self.group_creator.email), \
+                        "Group doesn't have original creator's email")
 
-        memberships = user.memberships.all()
+        # test that the user has the proper number of memberships
+        memberships = user.get_memberships()
         self.assertTrue(len(memberships) == 1, 'User has incorrect number of memberships')
         self.assertTrue(memberships[0].name == self.group.name, "User's group is incorrect")
 
