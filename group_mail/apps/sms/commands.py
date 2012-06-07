@@ -67,8 +67,10 @@ class Command(Utilities):
 
     def get_cmd_info(self, sms_fields, from_number):
         email = sms_fields[3]
+        # we don't use the user, but we still call get_or_create_user() to make sure
+        # that the user's account exists, or to create an account if it doesn't
         user, resp = self.get_or_create_user(email, from_number)
-        return {'group_name': sms_fields[1], 'group_code': sms_fields[2], 'user': user}, resp
+        return {'group_name': sms_fields[1], 'group_code': sms_fields[2], 'email': email}, resp
 
     def execute(self, sms_fields, from_number):
         if self.expected_sms_len and len(sms_fields) != self.expected_sms_len:
@@ -109,9 +111,9 @@ class CreateGroupCmd(Command):
                 " Please choose a group %s less than %d characters and try again." % \
                 (group_field, Group.MAX_LEN))
 
-    def execute_hook(self, group_name, group_code, user):
+    def execute_hook(self, group_name, group_code, email):
         try:
-            Group.objects.create_group(user, group_name, group_code)
+            Group.objects.create_group(email, group_name, group_code)
             return self.respond("Success! The group '%s' has been created." % group_name + \
                     ' Have members text #join (group name) (group code) to join.')
         except Group.AlreadyExists as e:
@@ -137,14 +139,21 @@ class JoinGroupCmd(Command):
         super(JoinGroupCmd, self).__init__(cmd)
         self.expected_sms_len = 4
 
-    def execute_hook(self, group_name, group_code, user):
+    def execute_hook(self, group_name, group_code, email):
         try:
-            user.join_group(group_name, group_code)
+            group = Group.objects.get(name=group_name, code=group_code)
+            group.add_members([email])
             return self.respond("Success! You've been added to the group '%s.'" % group_name)
         except Group.DoesNotExist:
-            return self.respond("The group '%s' does not exist." % group_name)
-        except Group.CodeInvalid:
-            return self.respond("The group code you entered is not correct"
+            try:
+                Group.objects.get(name=group_name)
+                # there is a group with this name, so the code must be invalid
+                return self.respond("The group code you entered is not correct"
                     " for the group '%s.'" % group_name)
+            except Group.DoesNotExist:
+                return self.respond("The group '%s' does not exist." % group_name)
+        """
+        Decided we don't need this case. Just return success, even if they've already joined.
         except CustomUser.AlreadyMember:
             return self.respond("You're already a member of the group '%s.'" % group_name)
+        """

@@ -37,6 +37,8 @@ class Group(models.Model):
 
     def add_members(self, member_email_list):
         for email in member_email_list:
+            if not isinstance(email, basestring):
+                raise TypeError('email is not a string')
             try:
                 CustomUser.objects.get(email=email)
             except CustomUser.DoesNotExist:
@@ -56,13 +58,19 @@ class Group(models.Model):
 
     def add_admin(self, admin):
         try:
-            admin_email = Email.objects.get(email=admin.email)
+            admin_email_obj = Email.objects.get(email=admin.email)
         except Email.DoesNotExist:
-            raise CustomException('Admin has invalid email')
-
-        if admin_email not in self.emails.all():
+            raise
+        if admin_email_obj not in self.emails.all():
             raise CustomException('Group admin not a member of group.')
         self.admins.add(admin)
+
+    def add_admin_email(self, admin_email):
+        try:
+            admin = CustomUser.objects.get(email=admin_email)
+        except CustomUser.DoesNotExist:
+            raise
+        self.add_admin(admin)
 
     """ Custom Exceptions """
 
@@ -92,6 +100,7 @@ class Group(models.Model):
             if msg is None:
                 msg = 'The group code %s is invalid for the group %s' % \
                         (code, name)
+            super(Group.CodeInvalid, self).__init__(msg)
 
     class _FieldNotAllowed(CustomException):
         def __init__(self, msg=None, field='field unspecified', value=''):

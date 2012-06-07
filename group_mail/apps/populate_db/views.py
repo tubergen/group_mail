@@ -22,7 +22,7 @@ def populate(request):
     for i in xrange(0, num_groups):
         group_name = 'group%d' % i
         group_code = 'group_code%d' % i
-        group = Group.objects.create_group(users[i], group_name, group_code)
+        group = Group.objects.create_group(emails[i], group_name, group_code)
         group.add_members(emails)
 
     groups = Group.objects.all()

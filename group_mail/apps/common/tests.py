@@ -55,8 +55,8 @@ class CustomUserTest(TestCase):
 
     def test_get_memberships(self):
         u = CustomUser.objects.create_user(**self.kwargs)
-        groups = {'g1': {'creator': u, 'group_name': 'name1', 'group_code': 'code1'},
-                'g2': {'creator': u, 'group_name': 'name2', 'group_code': 'code2'}}
+        groups = {'g1': {'creator_email': u.email, 'group_name': 'name1', 'group_code': 'code1'},
+                'g2': {'creator_email': u.email, 'group_name': 'name2', 'group_code': 'code2'}}
 
         g1 = Group.objects.create_group(**groups['g1'])
         g2 = Group.objects.create_group(**groups['g2'])
@@ -66,7 +66,6 @@ class CustomUserTest(TestCase):
         self.assertTrue(email_obj in g2.emails.all(), "group 2 is missing the user's email")
 
         memberships = u.get_memberships()
-        print memberships
         self.assertTrue((g1.id == memberships[0].id) or (g2.id == memberships[0].id), \
                 "user is missing a group")
         self.assertTrue((g1.id == memberships[1].id) or (g2.id == memberships[1].id), \

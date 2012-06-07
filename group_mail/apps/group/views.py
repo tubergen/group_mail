@@ -58,15 +58,16 @@ def group_info(request, group_name):
 @login_required
 def create_group(request):
     if request.method == 'POST':
-        form = CreateGroupForm(request.POST)
+        form = CreateGroupForm(request.user, request.POST)
         if form.is_valid():
             group_name = form.cleaned_data['group_name']
+            creator_email = form.cleaned_data['email']
             # no need to except here, since clean_ methods should validate data
-            Group.objects.create_group(request.user, group_name,
+            Group.objects.create_group(creator_email, group_name,
                     form.cleaned_data['group_code'])
             return HttpResponseRedirect('/group/%s' % group_name)
     else:
-        form = CreateGroupForm()
+        form = CreateGroupForm(request.user)
 
     return render_to_response('group/create_or_join.html',
                               {'form': form,
@@ -77,17 +78,19 @@ def create_group(request):
 @login_required
 def join_group(request):
     if request.method == 'POST':
-        form = JoinGroupForm(request.POST)
+        form = JoinGroupForm(request.user, request.POST)
         if form.is_valid():
             group_name = form.cleaned_data['group_name']
             group_code = form.cleaned_data['group_code']
+            email = form.cleaned_data['email']
+            group = Group.objects.get(name=group_name, code=group_code)
             try:
-                request.user.join_group(group_name, group_code)
+                group.add_members([email])
             except CustomUser.AlreadyMember:
                 pass
             return HttpResponseRedirect('/group/%s' % group_name)
     else:
-        form = JoinGroupForm()
+        form = JoinGroupForm(request.user)
 
     return render_to_response('group/create_or_join.html',
                               {'form': form,

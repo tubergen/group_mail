@@ -1,5 +1,5 @@
 from django import forms
-from group_mail.apps.common.models import CustomUser
+from group_mail.apps.common.models import CustomUser, Email
 from group_mail.apps.group.models import Group
 from group_mail.apps.group.fields import MultiEmailField
 from group_mail.apps.registration.forms import UserEmailForm
@@ -10,7 +10,16 @@ class GroupForm(forms.Form):
     group_code = forms.CharField(max_length=Group.MAX_LEN)
 
 
-class CreateGroupForm(GroupForm):
+class PopulatedEmailForm(forms.Form):
+    email = forms.ChoiceField(choices=[])
+
+    def __init__(self, user, *args, **kwargs):
+        super(PopulatedEmailForm, self).__init__(*args, **kwargs)
+        self.fields['email'].choices = \
+                [(email_obj.email, email_obj.email) for email_obj in user.email_set.all()]
+
+
+class CreateGroupForm(GroupForm, PopulatedEmailForm):
     def clean_group_name(self):
         group_name = self.cleaned_data['group_name']
         try:
@@ -28,7 +37,7 @@ class CreateGroupForm(GroupForm):
         return group_code
 
 
-class JoinGroupForm(GroupForm):
+class JoinGroupForm(GroupForm, PopulatedEmailForm):
     def clean_group_name(self):
         group_name = self.cleaned_data['group_name']
         try:

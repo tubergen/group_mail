@@ -18,8 +18,8 @@ def create_test_user(email, phone_number='0123456789', first_name='john', last_n
             phone_number=phone_number)
 
 
-def create_test_group(group_creator, group_name='group', group_code='code'):
-    return Group.objects.create_group(group_creator, group_name, group_code)
+def create_test_group(group_creator_email, group_name='group', group_code='code'):
+    return Group.objects.create_group(group_creator_email, group_name, group_code)
 
 
 class ParseSMSTest(TestCase):
@@ -153,7 +153,7 @@ class JoinGroupCmdTest(_CmdTestCase):
         self.from_number = '0123456789'
 
         self.group_creator = create_test_user('creator@gmail.com', phone_number='8888888888')
-        self.group = create_test_group(self.group_creator, self.sms_fields[1], self.sms_fields[2])
+        self.group = create_test_group(self.group_creator.email, self.sms_fields[1], self.sms_fields[2])
 
         self.cmd = JoinGroupCmd(self.sms_fields[0])
 
@@ -215,8 +215,9 @@ class JoinGroupCmdTest(_CmdTestCase):
     def test_already_a_member(self):
         self.cmd.execute(self.sms_fields, self.from_number)
         response = str(self.cmd.execute(self.sms_fields, self.from_number))
-        self.assertTrue(response.find('already a member') != -1,
-                'Already-a-member response not returned')
+        # we no longer complain if a user tries to join a group he's already joined
+        self.assertTrue(response.find('Success') != -1,
+                'Returned failure when user joined group where he was already a member.')
 
         user = CustomUser.objects.get(email=self.sms_fields[3])
         email_objs = self.group.emails.all()

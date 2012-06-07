@@ -29,7 +29,7 @@ class GroupManager(models.Manager):
         elif not re.match(GroupManager.valid_pattern, group_code):
             raise Group.CodeNotAllowed(code=group_code)
 
-    def create_group(self, creator, group_name, group_code):
+    def create_group(self, creator_email, group_name, group_code):
         from group_mail.apps.group.models import Group
 
         group_name = group_name.strip()
@@ -45,13 +45,13 @@ class GroupManager(models.Manager):
         # we expect something might go wrong
         if settings.MODIFY_MAILMAN_DB:
             try:
-                mailman_cmds.newlist(group_name, creator.email, group_code)
+                mailman_cmds.newlist(group_name, creator_email, group_code)
             except mailman_cmds.MailmanError:
                 raise
 
         group = Group.objects.create(name=group_name,
                                     code=group_code)
 
-        group.add_members([creator])
-        group.add_admin(creator)
+        group.add_members([creator_email])
+        group.add_admin_email(creator_email)
         return group

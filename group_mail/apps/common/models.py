@@ -12,6 +12,8 @@ class CustomUser(User):
 
     objects = CustomUserManager()
 
+    """
+    # Remove these methods, since now we join groups with emails
     def join_group(self, group_name, group_code):
         from group_mail.apps.group.models import Group
         try:
@@ -40,6 +42,7 @@ class CustomUser(User):
 
     def leave_group(self, group):
         group.remove_members([self.email])
+    """
 
     def is_complete(self):
         """ returns true if the CustomUser has a complete account
