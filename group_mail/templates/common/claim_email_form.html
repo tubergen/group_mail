@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Claim Email{% endblock %}
+
+{% block pagetitle %}Claim Email{% endblock %}
+
+{% block content %}
+<p>Does {{ email }} belong to you?</p>
+<p>Click submit below and we'll email instructions so that you can confirm it belongs to you.</p>
+
+<form action="" method="post"> {% csrf_token %}
+  {{ form.email.errors }}
+  <input type="hidden" name="email" value="{{ email }}" />
+  <input type="submit" value="Claim {{ email }}" />
+</form>
+{% endblock %}
