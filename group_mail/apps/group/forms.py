@@ -1,5 +1,7 @@
 from django import forms
-from group_mail.apps.common.models import CustomUser, Email
+from django.utils.safestring import mark_safe
+from django.contrib.auth.forms import PasswordResetForm
+from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.models import Group
 from group_mail.apps.group.fields import MultiEmailField
 from group_mail.apps.registration.forms import UserEmailForm
@@ -82,3 +84,30 @@ class AddMembersForm(forms.Form):
                 'rows': '3',
                 'placeholder': 'brian@gmail.com, anne@gmail.com, ellie@gmail.com'})
             )
+
+
+class AddEmailForm(UserEmailForm):
+    email = forms.EmailField(max_length=CustomUser.MAX_LEN,
+            label="Do you have an email that doesn't appear below?  Add it here:",
+            widget=forms.TextInput(attrs={
+                'class': 'input-small',
+                'label': 'hi',
+                'placeholder': 'e.g.: brian@gmail.com'}))
+
+    def clean_email(self):
+        try:
+            return super(AddEmailForm, self).clean_email()
+        except CustomUser.DuplicateEmail:
+            email = self.cleaned_data['email']
+            raise CustomUser.DuplicateEmail(
+                    msg=mark_safe('The email already belongs to an account.'
+                    ' Please click %s' % self.claim_email_link_html(email) + \
+                    ' if the email belongs to you.'),
+                    email=email)
+
+    def claim_email_link_html(self, email):
+        return '<a href="email/claim/%s">here</a>' % email
+
+
+class ClaimEmailForm(PasswordResetForm):
+    email = forms.EmailField(max_length=CustomUser.MAX_LEN)
