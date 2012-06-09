@@ -1,11 +1,11 @@
 {% autoescape off %}
-You're receiving this e-mail because a user claimed that {{ email }} belonged to his/her account at {{ site_name }}.
+You're receiving this e-mail because a user ({{ claim_user.get_full_name }}) claimed that {{ email }} belonged to his/her account at {{ site_name }}.
 
-The user's account has the primary email {{ user.email }}.
+That user's account has the primary email {{ claim_user.email }}.
 
 If you are this user and you initiated this action, please go to the following page to confirm that this email belongs to you. 
 {% block reset_link %}
-{% include "registration/reset_link.html" %}
+{% include "common/claim_link.html" %}
 {% endblock %}
 
 Thanks for using our site!

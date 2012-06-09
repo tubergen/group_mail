@@ -45,8 +45,8 @@ if settings.DEBUG:
 # claim email urls
 urlpatterns += patterns('',
     (r'^claim/email/(?P<email>.+)$', claim_email),
-    (r'^claim/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)$',
-        claim_email_confirm, "claim_email_confirm"),
+    (r'^claim/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)-(?P<email>.+)$',
+        claim_email_confirm, {}, "claim_email_confirm"),
 )
 
 # reset password urls

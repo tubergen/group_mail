@@ -133,6 +133,9 @@ class ClaimEmailForm(PasswordResetForm):
             current_site = get_current_site(request)
             site_name = current_site.name
             domain = current_site.domain
+            # below, we use claim_user to generate the uid and token.
+            # this is because, if the 'claim request' is successful, claim_user
+            # is the account to which we'll add the email
             c = {
                 'email': user.email,
                 'domain': domain,

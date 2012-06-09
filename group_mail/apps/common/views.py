@@ -74,7 +74,7 @@ def claim_email(request, email):
         form = ClaimEmailForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            form.save()
+            form.save(claim_user=request.user)
             return render_to_response('common/claim_email_sent.html',
                     {'email': email},
                     context_instance=RequestContext(request))
@@ -87,12 +87,11 @@ def claim_email(request, email):
 
 
 @login_required
-def claim_email_confirm(request, uidb36=None, token=None):
+def claim_email_confirm(request, uidb36=None, token=None, email=None):
     """
     Checks the hash in a claim email link and adds the email to the requested account if the link is valid
     """
-    assert uidb36 is not None and token is not None  # checked by URLconf
-    post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
+    assert uidb36 is not None and token is not None  and email is not None  # checked by URLconf
     try:
         uid_int = base36_to_int(uidb36)
         user = CustomUser.objects.get(id=uid_int)
@@ -100,4 +99,5 @@ def claim_email_confirm(request, uidb36=None, token=None):
         user = None
 
     if user is not None and default_token_generator.check_token(user, token):
-        return HttpResponseRedirect(post_reset_redirect)
+        # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
+        return HttpResponseRedirect('/email/added/%s' % email)
