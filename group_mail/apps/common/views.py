@@ -64,8 +64,7 @@ def claim_email(request, email):
         form = ClaimEmailForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            form.save(subject_template_name='common/claim_email_subject.txt',
-                    email_template_name='common/claim_email_email.html')
+            form.save()
             return render_to_response('common/claim_email_sent.html',
                     {'email': email},
                     context_instance=RequestContext(request))
