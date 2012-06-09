@@ -11,8 +11,7 @@ from django.conf import settings
 
 
 def to_listname(group):
-    name = 'g%d' % group._id
-    print '\n\n' + name + '\n\n'
+    name = 'g%d' % group.id
     return name
 
 
@@ -23,7 +22,7 @@ def newlist(group, owner_email, list_password):
     if not errors:
         # mailman doesn't automatically add the list creator as a member, but
         # we want to
-        errors = add_members(listname, owner_email)
+        errors = add_members(group, owner_email)
         if not errors:
             add_postfix_mysql_alias(listname)
     else:
@@ -184,15 +183,17 @@ def add_postfix_mysql_alias(listname):
 
 class TestGroup():
     def __init__(self, id=1):
-        self._id = id
+        self.id = id
 
 
 def main():
-    group = TestGroup()
+    if len(sys.argv) > 2:
+        id = int(sys.argv[2])
+    group = TestGroup(id)
     if len(sys.argv) > 1 and sys.argv[1] == 'add':
         add_members(group, 'brian.tubergengmail.com\ntubergen@princeton.edu')
     elif len(sys.argv) > 1 and sys.argv[1] == 'new':
-        newlist(group, 'tubergen@princeton.edu', 'hack')
+        newlist(group, 'brian.tubergen@gmail.com', 'hack')
     elif len(sys.argv) > 1 and sys.argv[1] == 'rem':
         remove_members(group, ['brian.tubergen@gmail.com',
                                  'tubergen@princeton.edu'])

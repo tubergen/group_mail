@@ -1,3 +1,6 @@
+from django.contrib.auth.tokens import default_token_generator
+from django.core.urlresolvers import reverse
+from django.utils.http import base36_to_int
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -59,6 +62,13 @@ def logged_in_homepage(request):
 
 
 @login_required
+def email_added(request, email):
+    return render_to_response('common/email_added.html',
+            {'email': email},
+            context_instance=RequestContext(request))
+
+
+@login_required
 def claim_email(request, email):
     if request.method == 'POST':
         form = ClaimEmailForm(request.POST)
@@ -77,7 +87,18 @@ def claim_email(request, email):
             context_instance=RequestContext(request))
 
 
-def email_added(request, email):
-    return render_to_response('common/email_added.html',
-            {'email': email},
-            context_instance=RequestContext(request))
+@login_required
+def claim_email_confirm(request, uidb36=None, token=None):
+    """
+    Checks the hash in a claim email link and adds the email to the requested account if the link is valid
+    """
+    assert uidb36 is not None and token is not None  # checked by URLconf
+    post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
+    try:
+        uid_int = base36_to_int(uidb36)
+        user = CustomUser.objects.get(id=uid_int)
+    except (ValueError, CustomUser.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        return HttpResponseRedirect(post_reset_redirect)

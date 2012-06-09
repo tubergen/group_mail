@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
-from group_mail.apps.common.views import homepage_splitter, claim_email, email_added
+from group_mail.apps.common.views import homepage_splitter, claim_email, email_added, claim_email_confirm
 from group_mail.apps.group.views import group_info, create_group, join_group
 from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
@@ -21,7 +21,6 @@ urlpatterns = patterns('',
     (r'^create/group/$', create_group),
     (r'^join/group/$', join_group),
     (r'^email/added/(?P<email>.+)$', email_added),
-    (r'^email/claim/(?P<email>.+)$', claim_email),
     (r'^register/$', register),
     (r'^register/thanks/$', register_thanks),
     (r'^login/$', 'django.contrib.auth.views.login',  {'authentication_form': LoginForm}),
@@ -43,7 +42,14 @@ if settings.DEBUG:
         (r'^populate/$', populate),
     )
 
+# claim email urls
+urlpatterns += patterns('',
+    (r'^claim/email/(?P<email>.+)$', claim_email),
+    (r'^claim/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)$',
+        claim_email_confirm, "claim_email_confirm"),
+)
 
+# reset password urls
 urlpatterns += patterns('django.contrib.auth.views',
     (r'^password-reset/$', 'password_reset', {}),
     (r'^password-reset/done/$', 'password_reset_done', {}),

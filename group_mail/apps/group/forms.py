@@ -106,7 +106,7 @@ class AddEmailForm(UserEmailForm):
                     email=email)
 
     def claim_email_link_html(self, email):
-        return '<a href="email/claim/%s">here</a>' % email
+        return '<a href="claim/email/%s">here</a>' % email
 
 
 class ClaimEmailForm(PasswordResetForm):
