@@ -98,8 +98,9 @@ class CustomUser(User):
         Deactivates account by freeing up unique fields and setting account
         to be inactive.
         """
-        self.username, self.email, self.phone_number = [None] * 3
+        self.username, self.email, self.phone_number = [''] * 3
         self.is_active = False
+        self.save()
 
     def remove_email(self, email):
         """
