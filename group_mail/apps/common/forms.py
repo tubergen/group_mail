@@ -13,16 +13,24 @@ class AddEmailForm(UserEmailForm):
                 'label': 'hi',
                 'placeholder': 'e.g.: brian@gmail.com'}))
 
+    def __init__(self, claim_user, *args, **kwargs):
+        super(UserEmailForm, self).__init__(*args, **kwargs)
+        self.claim_user = claim_user
+
     def clean_email(self):
         try:
             return super(AddEmailForm, self).clean_email()
         except CustomUser.DuplicateEmail:
             email = self.cleaned_data['email']
-            raise CustomUser.DuplicateEmail(
-                    msg=mark_safe('The email already belongs to an account.'
-                    ' Please click %s' % self.claim_email_link_html(email) + \
-                    ' if the email belongs to you.'),
-                    email=email)
+            if self.claim_user.has_email(email):
+                raise CustomUser.DuplicateEmail(
+                        msg='The email already belongs to your account.')
+            else:
+                raise CustomUser.DuplicateEmail(
+                        msg=mark_safe('The email already belongs to an account.'
+                        ' Please click %s' % self.claim_email_link_html(email) + \
+                        ' if the email belongs to you.'),
+                        email=email)
 
     def claim_email_link_html(self, email):
         return '<a href="claim/email/%s">here</a>' % email
@@ -30,6 +38,16 @@ class AddEmailForm(UserEmailForm):
 
 class ClaimEmailForm(PasswordResetForm):
     email = forms.EmailField(max_length=CustomUser.MAX_LEN)
+
+    def __init__(self, claim_user, *args, **kwargs):
+        super(ClaimEmailForm, self).__init__(*args, **kwargs)
+        self.claim_user = claim_user
+
+    def clean_email(self):
+        email = super(ClaimEmailForm, self).clean_email()
+        if self.claim_user.has_email(email):
+            raise CustomUser.DuplicateEmail(msg='The email already belongs to your account.')
+        return email
 
     def save(self,
              subject_template_name='common/claim_email_subject.txt',

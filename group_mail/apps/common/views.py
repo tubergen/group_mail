@@ -48,13 +48,14 @@ def landing_page(request):
 def logged_in_homepage(request):
     groups_by_email = request.user.get_groups_by_email()
     if request.method == 'POST':
-        form = AddEmailForm(request.POST)
+        form = AddEmailForm(request.user, request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
             request.user.populate(email=email)
-            return HttpResponseRedirect('email/added/%s' % email)
+            return HttpResponseRedirect(reverse(email_added,
+                kwargs={'email': email}))
     else:
-        form = AddEmailForm()
+        form = AddEmailForm(request.user)
 
     return render_to_response('group/list.html',
             {'groups_by_email': groups_by_email,
@@ -72,19 +73,28 @@ def email_added(request, email, validlink=True):
 
 @login_required
 def claim_email(request, email):
+    if request.user.has_email(email):
+        # there's no need to claim the email, so redirect
+        return HttpResponseRedirect(reverse(homepage_splitter))
+
     if request.method == 'POST':
-        form = ClaimEmailForm(request.POST)
+        form = ClaimEmailForm(request.user, request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
             form.save(claim_user=request.user)
-            return render_to_response('common/claim_email_sent.html',
-                    {'email': email},
-                    context_instance=RequestContext(request))
+            return HttpResponseRedirect(reverse(claim_email_sent,
+                kwargs={'email': email}))
     else:
-        form = ClaimEmailForm()
+        form = ClaimEmailForm(request.user)
     return render_to_response('common/claim_email_form.html',
             {'email': email,
             'form': form},
+            context_instance=RequestContext(request))
+
+
+def claim_email_sent(request, email):
+    return render_to_response('common/claim_email_sent.html',
+            {'email': email},
             context_instance=RequestContext(request))
 
 

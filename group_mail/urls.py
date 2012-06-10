@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
-from group_mail.apps.common.views import homepage_splitter, claim_email, email_added, claim_email_confirm
+from group_mail.apps.common.views import homepage_splitter, claim_email, email_added, claim_email_confirm, claim_email_sent
 from group_mail.apps.group.views import group_info, create_group, join_group
 from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
@@ -44,6 +44,7 @@ if settings.DEBUG:
 
 # claim email urls
 urlpatterns += patterns('',
+    (r'^claim/email/sent/(?P<email>.+)$', claim_email_sent),
     (r'^claim/email/(?P<email>.+)$', claim_email),
     (r'^claim/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)-(?P<email>.+)$',
         claim_email_confirm, {}, "claim_email_confirm"),

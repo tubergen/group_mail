@@ -117,10 +117,17 @@ class CustomUser(User):
             my_emails = self.email_set.all()
             if len(my_emails) != 0:
                 self.email = my_emails[0].email
-                self.username = my_emails[0].username
+                self.username = my_emails[0].user.username
             else:
                 # there are no other emails for this account, so deactivate it
                 self.deactivate()
+
+    def has_email(self, email):
+        email_obj = Email.objects.get(email=email)
+        if email_obj in self.email_set.all():
+            return True
+        else:
+            return False
 
     """ Custom Exceptions """
 
