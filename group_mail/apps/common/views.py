@@ -8,7 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.views import create_group, join_group
-from group_mail.apps.group.forms import CreateOrJoinGroupForm, AddEmailForm, ClaimEmailForm
+from group_mail.apps.group.forms import CreateOrJoinGroupForm
+from group_mail.apps.common.forms import AddEmailForm, ClaimEmailForm
 
 
 def homepage_splitter(request):
@@ -62,9 +63,10 @@ def logged_in_homepage(request):
 
 
 @login_required
-def email_added(request, email):
+def email_added(request, email, validlink=True):
     return render_to_response('common/email_added.html',
-            {'email': email},
+            {'email': email,
+            'validlink': validlink},
             context_instance=RequestContext(request))
 
 
@@ -94,10 +96,24 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
     assert uidb36 is not None and token is not None  and email is not None  # checked by URLconf
     try:
         uid_int = base36_to_int(uidb36)
-        user = CustomUser.objects.get(id=uid_int)
+        claim_user = CustomUser.objects.get(id=uid_int)
     except (ValueError, CustomUser.DoesNotExist):
-        user = None
+        claim_user = None
 
-    if user is not None and default_token_generator.check_token(user, token):
+    validlink = False
+    if claim_user is not None and default_token_generator.check_token(claim_user, token):
+        # the logged in user should be the same as the user given by the uid
+        assert request.user.id == claim_user.id
+
+        # get the user associated with the claimed_email and remove that email
+        # from the user's account
+        old_user = CustomUser.objects.get(email=email)
+        old_user.remove_email(email)
+
+        # add the email to the claim_user's account
+        claim_user.populate(email)
+
         # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
-        return HttpResponseRedirect('/email/added/%s' % email)
+        validlink = True
+
+    return email_added(request, email, validlink)

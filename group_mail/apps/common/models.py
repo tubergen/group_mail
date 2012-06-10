@@ -1,9 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.conf import settings
 from group_mail.apps.common.errors import CustomException
 from group_mail.apps.common.custom_user_manager import CustomUserManager
-from group_mail.apps.mailman import mailman_cmds
 
 
 class CustomUser(User):
@@ -94,6 +92,35 @@ class CustomUser(User):
         for email in self.email_set.all():
             result[email] = email.group_set.all()
         return result
+
+    def deactivate(self):
+        """
+        Deactivates account by freeing up unique fields and setting account
+        to be inactive.
+        """
+        self.username, self.email, self.phone_number = [None] * 3
+        self.is_active = False
+
+    def remove_email(self, email):
+        """
+        Removes the email from the user's account.
+        """
+        try:
+            email_obj = Email.objects.get(email=email)
+        except Email.DoesNotExist:
+            raise
+        email_obj.delete()
+
+        if self.email == email:
+            # if we've removed the primary email, we need to change the primary
+            # email and the username
+            my_emails = self.email_set.all()
+            if len(my_emails) != 0:
+                self.email = my_emails[0].email
+                self.username = my_emails[0].username
+            else:
+                # there are no other emails for this account, so deactivate it
+                self.deactivate()
 
     """ Custom Exceptions """
 

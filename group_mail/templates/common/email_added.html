@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Email Added{% endblock %}
-{% block pagetitle %}Email Added{% endblock %}
+{% block title %}Claim Email{% endblock %}
+{% block pagetitle %}Claim Email{% endblock %}
 
 {% block content %}
-<p>Successfully added {{ email }} to your account.</p>
-<a href="\">Return</a>
+
+{% if validlink %}
+  <p>Successfully added {{ email }} to your account.</p>
+  <a href="\">Return</a>
+{% else %}
+<p>The claim email link was invalid, possibly because it has already been used.
+Please request a new claim email.</p>
+{% endif %}
 
 {% endblock %}
