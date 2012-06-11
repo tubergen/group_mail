@@ -1,5 +1,6 @@
 from django import forms
 from django.utils.safestring import mark_safe
+from django.core.urlresolvers import reverse
 from django.contrib.auth.forms import PasswordResetForm
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.forms import UserEmailForm
@@ -33,7 +34,9 @@ class AddEmailForm(UserEmailForm):
                         email=email)
 
     def claim_email_link_html(self, email):
-        return '<a href="claim/email/%s">here</a>' % email
+        from group_mail.apps.common.views import claim_email
+        claim_url = reverse(claim_email, kwargs={'email': email})
+        return '<a href="%s">here</a>' % claim_url
 
 
 class ClaimEmailForm(PasswordResetForm):
