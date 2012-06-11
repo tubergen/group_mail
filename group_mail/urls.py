@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
-from group_mail.apps.common.views import homepage_splitter, claim_email, email_added, claim_email_confirm, claim_email_sent
+from group_mail.apps.common.views import homepage_splitter, claim_email, email_added, email_removed, claim_email_confirm, claim_email_sent
 from group_mail.apps.group.views import group_info, create_group, join_group
 from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
@@ -21,6 +21,7 @@ urlpatterns = patterns('',
     (r'^create/group/$', create_group),
     (r'^join/group/$', join_group),
     (r'^email/added/(?P<email>.+)$', email_added),
+    (r'^email/removed/(?P<email>.+)$', email_removed),
     (r'^register/$', register),
     (r'^register/thanks/$', register_thanks),
     (r'^login/$', 'django.contrib.auth.views.login',  {'authentication_form': LoginForm}),

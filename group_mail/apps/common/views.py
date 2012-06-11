@@ -48,27 +48,47 @@ def landing_page(request):
 def logged_in_homepage(request):
     groups_by_email = request.user.get_groups_by_email()
     if request.method == 'POST':
-        form = AddEmailForm(request.user, request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            request.user.populate(email=email)
-            return HttpResponseRedirect(reverse(email_added,
+        if request.POST.get('add_email_submit'):
+            form = AddEmailForm(request.user, request.POST)
+            if form.is_valid():
+                email = form.cleaned_data['email']
+                request.user.populate(email=email)
+                return HttpResponseRedirect(reverse(email_added,
+                    kwargs={'email': email}))
+        elif request.POST.get('remove_email_submit'):
+            email = request.POST.get('remove_email_submit')
+            request.user.remove_email(email, unsubscribe=True)
+            return HttpResponseRedirect(reverse(email_removed,
                 kwargs={'email': email}))
     else:
         form = AddEmailForm(request.user)
 
-    return render_to_response('group/list.html',
+    return render_to_response('logged_in_homepage.html',
             {'groups_by_email': groups_by_email,
             'form': form},
             context_instance=RequestContext(request))
 
 
 @login_required
-def email_added(request, email, validlink=True):
-    return render_to_response('common/email_added.html',
+def email_action(request, email, action_type, validlink=True):
+    return render_to_response('common/email_action.html',
             {'email': email,
-            'validlink': validlink},
+            'validlink': validlink,
+            'action_type': action_type},
             context_instance=RequestContext(request))
+
+@login_required
+def email_claim(request, email, validlink):
+    return email_action(request, email, "claim", validlink)
+
+@login_required
+def email_added(request, email)
+    return email_action(request, email, "added")
+
+
+@login_required
+def email_removed(request, email):
+    return email_action(request, email, "removed")
 
 
 @login_required
@@ -126,4 +146,4 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
         # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
         validlink = True
 
-    return email_added(request, email, validlink)
+    return email_claim(request, email, validlink)

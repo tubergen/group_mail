@@ -10,38 +10,6 @@ class CustomUser(User):
 
     objects = CustomUserManager()
 
-    """
-    # Remove these methods, since now we join groups with emails
-    def join_group(self, group_name, group_code):
-        from group_mail.apps.group.models import Group
-        try:
-            group = Group.objects.get(name=group_name)
-        except Group.DoesNotExist:
-            raise
-
-        if group_code != group.code:
-            raise Group.CodeInvalid()
-
-        email_obj = Email.objects.get(email=self.email)
-        if email_obj in group.emails.all():
-            raise CustomUser.AlreadyMember(self.email, group_name)
-        else:
-            # At this point, we suspect the join group cmd is valid
-
-            # Try modifying the mailman list first, since this is the last place
-            # we expect something might go wrong
-            if settings.MODIFY_MAILMAN_DB:
-                try:
-                    mailman_cmds.add_members(group_name, self.email)
-                except mailman_cmds.MailmanError:
-                    raise
-
-            group.add_members([self.email])
-
-    def leave_group(self, group):
-        group.remove_members([self.email])
-    """
-
     def is_complete(self):
         """ returns true if the CustomUser has a complete account
             (all #user cmd info populated) and false otherwise """
@@ -108,14 +76,19 @@ class CustomUser(User):
         self.is_active = False
         self.save()
 
-    def remove_email(self, email):
+    def remove_email(self, email, unsubscribe=False):
         """
-        Removes the email from the user's account.
+        Removes the email from the user's account. If unsubscribe is True,
+        we also remove the email from any groups and mailman mailing lists that
+        it's associated with.
         """
         try:
             email_obj = Email.objects.get(email=email)
         except Email.DoesNotExist:
             raise
+
+        if unsubscribe:
+            email_obj.unsubscribe_all()
         email_obj.delete()
 
         if self.email == email:
@@ -171,6 +144,17 @@ class CustomUser(User):
 class Email(models.Model):
     email = models.EmailField(unique=True)
     user = models.ForeignKey(CustomUser, related_name='email_set')
+
+    def unsubscribe_all(self):
+        """
+        Unsubscribes Email from all groups to which it's subscribed.
+
+        What should happen when the user unsubscribes from a group that
+        he's admin of? Right now, we do nothing: he remains admin, even
+        though he can't even access the group.
+        """
+        for group in self.group_set.all():
+            group.remove_members([self.email])
 
     def __unicode__(self):
         return self.email
