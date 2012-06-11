@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Email {{ action_type }}{% endblock %}
+{% block pagetitle %}Email {{ action_type }}{% endblock %}
+
+{% block content %}
+
+{% if validlink %}
+
+  <p>Successfully {{ action_type }} {{ email }}.</p>
+  <a href="\">Return</a>
+
+{% else %}
+
+  <p>The claim email link was invalid, possibly because it has already
+  been used. Please request that a new claim email be sent.</p>
+
+{% endif %}
+
+{% endblock %}
