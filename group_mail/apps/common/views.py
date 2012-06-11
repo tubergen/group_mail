@@ -80,7 +80,7 @@ def email_action(request, email, success_msg, action_type, validlink=True):
 
 @login_required
 def email_claim(request, email, validlink):
-    success_msg = 'Successfully claimed %s, which now belongs to your account.'
+    success_msg = 'Successfully claimed %s, which now belongs to your account.' % email
     return email_action(request, email, success_msg, "claim", validlink)
 
 
