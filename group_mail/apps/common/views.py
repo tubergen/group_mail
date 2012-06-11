@@ -70,27 +70,30 @@ def logged_in_homepage(request):
 
 
 @login_required
-def email_action(request, email, action_type, validlink=True):
+def email_action(request, email, success_msg, action_type, validlink=True):
     return render_to_response('common/email_action.html',
-            {'email': email,
-            'validlink': validlink,
+            {'validlink': validlink,
+            'success_msg': success_msg,
             'action_type': action_type},
             context_instance=RequestContext(request))
 
 
 @login_required
 def email_claim(request, email, validlink):
-    return email_action(request, email, "claim", validlink)
+    success_msg = 'Successfully claimed %s, which now belongs to your account.'
+    return email_action(request, email, success_msg, "claim", validlink)
 
 
 @login_required
 def email_added(request, email):
-    return email_action(request, email, "added")
+    success_msg = 'Successfully added %s to your account.' % email
+    return email_action(request, email, success_msg, "added")
 
 
 @login_required
 def email_removed(request, email):
-    return email_action(request, email, "removed")
+    success_msg = 'Successfully removed %s from your account.' % email
+    return email_action(request, email, success_msg, "removed")
 
 
 @login_required
