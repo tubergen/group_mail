@@ -77,12 +77,14 @@ def email_action(request, email, action_type, validlink=True):
             'action_type': action_type},
             context_instance=RequestContext(request))
 
+
 @login_required
 def email_claim(request, email, validlink):
     return email_action(request, email, "claim", validlink)
 
+
 @login_required
-def email_added(request, email)
+def email_added(request, email):
     return email_action(request, email, "added")
 
 
