@@ -71,6 +71,89 @@ class CustomUserTest(TestCase):
         self.assertTrue((g1.id == memberships[1].id) or (g2.id == memberships[1].id), \
                 "user is missing a group")
 
+    def test_remove_nonprimary_email(self):
+        """
+        Tests that remove_email() properly removes a user's non-primary email.
+        """
+        another_email = 'another_email@gmail.com'
+        u = self.get_user_with_two_emails(another_email)
+        u.remove_email(another_email)
+        self.after_remove_email_test(u, another_email, self.kwargs['email'])
+
+    def test_remove_primary_email_when_many_emails(self):
+        """
+        Tests that remove_email() properly reassigns a user's primary email when we remove an
+        email from an account where there are other emails.
+        """
+        another_email = 'another_email@gmail.com'
+        u = self.get_user_with_two_emails(another_email)
+        u.remove_email(self.kwargs['email'])
+        self.after_remove_email_test(u, self.kwargs['email'], another_email)
+
+    def test_remove_primary_email_when_only_email(self):
+        """
+        Tests that remove_email() properly deactivates a user's account when we remove an
+        email from an account where that email was the only email.
+        """
+        u = CustomUser.objects.create_user(**self.kwargs)
+        self.assertEqual(len(u.email_set.all()), 1, 'wrong initial number of emails')
+        u.remove_email(self.kwargs['email'])
+        self.after_deactivate_test(u)
+
+    def test_deactivate(self):
+        """
+        Tests that deactivate() properly deactivates a user's account
+        """
+        u = CustomUser.objects.create_user(**self.kwargs)
+        u.deactivate()
+        self.after_deactivate_test(u)
+
+    def get_user_with_two_emails(self, another_email):
+        """
+        Returns a user with two emails. The primary email is the one given by kwargs.
+        """
+        u = CustomUser.objects.create_user(**self.kwargs)
+        self.assertEqual(len(u.email_set.all()), 1, 'wrong initial number of emails')
+        u.populate(email=another_email)
+        self.assertEqual(len(u.email_set.all()), 2, 'email improperly populated')
+        return u
+
+    def after_remove_email_test(self, u, removed_email, remaining_email):
+        """
+        Common code that tests whether remove_email worked properly.
+        """
+        self.assertEqual(len(u.email_set.all()), 1, 'wrong number of emails after remove')
+        self.assertEqual(remaining_email, u.email, 'user has wrong email after remove')
+
+        try:
+            Email.objects.get(email=removed_email)
+            self.assertTrue(False, 'email object not deleted')
+        except Email.DoesNotExist:
+            pass  # we expect the email object to have been deleted
+
+    def after_deactivate_test(self, u):
+        """
+        Common code that tests whether account deactivation worked properly.
+        """
+        self.assertEqual(len(u.email_set.all()), 0, 'wrong number of emails after remove')
+        self.assertEqual(u.email, '', 'email not cleared on deactivated user')
+        self.assertEqual(u.username, '', 'username not cleared on deactivated user')
+        self.assertEqual(u.phone_number, '', 'phone_number not cleared on deactivated user')
+        self.assertEqual(u.is_active, False, 'deactivated user not inactive')
+
+        try:
+            Email.objects.get(email=self.kwargs['email'])
+            self.assertTrue(False, 'email object not deleted')
+        except Email.DoesNotExist:
+            pass  # we expect the email object to have been deleted
+
+        u2 = CustomUser.objects.create_user(**self.kwargs)
+        self.assertNotEqual(u2.id, u.id, 'new user and deleted user have same id')
+        self.assertEqual(u2.email, self.kwargs['email'], 'new user has wrong email')
+
+        email_obj = Email.objects.get(email=self.kwargs['email'])
+        self.assertEqual(u2.id, email_obj.user.id, 'email_obj points to wrong user')
+
 
 class GetMethodTest(TestCase):
     def setUp(self):

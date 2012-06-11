@@ -98,6 +98,12 @@ class CustomUser(User):
         Deactivates account by freeing up unique fields and setting account
         to be inactive.
         """
+        try:
+            email_obj = Email.objects.get(email=self.email)
+            email_obj.delete()
+        except Email.DoesNotExist:
+            # that's fine; perhaps the email obj was already deleted
+            pass
         self.username, self.email, self.phone_number = [''] * 3
         self.is_active = False
         self.save()
@@ -118,7 +124,8 @@ class CustomUser(User):
             my_emails = self.email_set.all()
             if len(my_emails) != 0:
                 self.email = my_emails[0].email
-                self.username = my_emails[0].user.username
+                self.username = my_emails[0].email
+                self.save()
             else:
                 # there are no other emails for this account, so deactivate it
                 self.deactivate()
