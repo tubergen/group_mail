@@ -47,6 +47,8 @@ def landing_page(request):
 @login_required
 def logged_in_homepage(request):
     groups_by_email = request.user.get_groups_by_email()
+    errors = []
+    form = AddEmailForm(request.user)
     if request.method == 'POST':
         if request.POST.get('add_email_submit'):
             form = AddEmailForm(request.user, request.POST)
@@ -57,15 +59,18 @@ def logged_in_homepage(request):
                     kwargs={'email': email}))
         elif request.POST.get('remove_email_submit'):
             email = request.POST.get('remove_email_submit')
-            request.user.remove_email(email, unsubscribe=True)
-            return HttpResponseRedirect(reverse(email_removed,
-                kwargs={'email': email}))
-    else:
-        form = AddEmailForm(request.user)
+            if len(request.user.email_set.all()) > 1:
+                request.user.remove_email(email, unsubscribe=True)
+                return HttpResponseRedirect(reverse(email_removed,
+                    kwargs={'email': email}))
+            else:
+                errors.append('You cannot remove the only email associated with your account.'
+                    'You must have one email at all times in order to log in.')
 
     return render_to_response('logged_in_homepage.html',
             {'groups_by_email': groups_by_email,
-            'form': form},
+            'form': form,
+            'errors': errors},
             context_instance=RequestContext(request))
 
 
@@ -126,7 +131,14 @@ def claim_email_sent(request, email):
 @login_required
 def claim_email_confirm(request, uidb36=None, token=None, email=None):
     """
-    Checks the hash in a claim email link and adds the email to the requested account if the link is valid
+    Checks the hash in a claim email link and adds the email to the requested
+    account if the link is valid.
+
+    Note that the link will remain valid for a given user.id/password pair
+    until the user logs out.
+
+    If we want to change this behavior, we should write our own token generator
+    and not use the default_token_generator = PasswordResetTokenGenerator.
     """
     assert uidb36 is not None and token is not None  and email is not None  # checked by URLconf
     try:

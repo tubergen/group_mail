@@ -4,14 +4,31 @@
 {% block pagetitle %}Your Groups{% endblock %}
 
 {% block content %}
-  {# add email form #}
+
+  <!-------------------------------------------------------
+  add email form
+  -------------------------------------------------------->
+
   <form method="post" action=""> {% csrf_token %}
     {% include "generic_fields.html" %}
     <input type="submit" name="submit" value="Submit" />
     <input type="hidden" name="add_email_submit" value="true">
   </form>
 
-  {# email / group list #}
+  <!-------------------------------------------------------
+  email / group list
+  -------------------------------------------------------->
+
+  {% if errors %}
+  <div class='error-list'>
+    <ul>
+      {% for error in errors %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   {% for email, group_list in groups_by_email.items %}
     <form class="form-inline" method="post" action=""> {% csrf_token %}
       <strong>{{ email }}</strong>

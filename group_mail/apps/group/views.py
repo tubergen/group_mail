@@ -34,8 +34,7 @@ def group_info(request, group_name):
 
                 return render_to_response('group/member_removed.html',
                         {'group': group,
-                        'removed_member_emails': removed_member_emails,
-                        'errors': errors},
+                        'removed_member_emails': removed_member_emails},
                         context_instance=RequestContext(request))
         elif request.POST.get('add_members_submit'):
             add_members_form = AddMembersForm(request.POST)
