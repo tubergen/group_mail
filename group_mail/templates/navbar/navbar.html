@@ -7,14 +7,14 @@
       <a class="brand" href="/">Group Mail</a>
       <ul class="nav">
         {% if not user.is_authenticated %}
-        <li><a href="/register/">Sign Up</a></li>
+        <li><a href="/register/">Placeholder</a></li>
         {% endif %}
       </ul>
       <div class="actions">
         {% if not user.is_authenticated %}
         {% include "navbar/login_box.html" %}
         {% else %}
-        <a class="text pull-right span1" href="/logout/">Logout</a>
+        <a class="text pull-right span1" href="{% url django.contrib.auth.views.logout %}">Logout</a>
         {% include "navbar/create_group_box.html" %}
         {% endif %}
       </div>
