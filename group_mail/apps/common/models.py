@@ -1,5 +1,7 @@
+from django.utils.safestring import mark_safe
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from group_mail.apps.common.errors import CustomException
 from group_mail.apps.common.custom_user_manager import CustomUserManager
 
@@ -70,7 +72,7 @@ class CustomUser(User):
             email_obj = Email.objects.get(email=self.email)
             email_obj.delete()
         except Email.DoesNotExist:
-            # that's fine; perhaps the email obj was already deleted
+            # that's fine; the email obj is already deleted
             pass
         self.username, self.email, self.phone_number = [''] * 3
         self.is_active = False
@@ -123,7 +125,21 @@ class CustomUser(User):
             super(CustomUser.DuplicatePhoneNumber, self).__init__(msg, 'phone number', phone_number)
 
     class DuplicateEmail(_DuplicateField):
-        def __init__(self, msg=None, email=''):
+        @classmethod
+        def claim_link_error_msg(class_, email):
+            return mark_safe('The email already belongs to an account.'
+                    ' Please click %s' % class_.claim_email_link_html(email) + \
+                    ' if the email belongs to you.')
+
+        @staticmethod
+        def claim_email_link_html(email):
+            from group_mail.apps.common.views import claim_email
+            claim_url = reverse(claim_email, kwargs={'email': email})
+            return '<a href="%s">here</a>' % claim_url
+
+        def __init__(self, msg=None, email='', include_claim_link=False):
+            if include_claim_link:
+                msg = self.claim_link_error_msg(email)
             super(CustomUser.DuplicateEmail, self).__init__(msg, 'email', email)
 
     class AlreadyMember(CustomException):

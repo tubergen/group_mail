@@ -25,7 +25,7 @@ class UserEmailForm(forms.Form):
         email = self.cleaned_data['email']
         try:
             CustomUser.objects.get(email=email)
-            raise CustomUser.DuplicateEmail(email=email)
+            raise CustomUser.DuplicateEmail(email=email, include_claim_link=True)
         except CustomUser.DoesNotExist:
             return email
 

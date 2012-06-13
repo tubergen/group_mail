@@ -1,6 +1,4 @@
 from django import forms
-from django.utils.safestring import mark_safe
-from django.core.urlresolvers import reverse
 from django.contrib.auth.forms import PasswordResetForm
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.forms import UserEmailForm
@@ -27,16 +25,7 @@ class AddEmailForm(UserEmailForm):
                 raise CustomUser.DuplicateEmail(
                         msg='The email already belongs to your account.')
             else:
-                raise CustomUser.DuplicateEmail(
-                        msg=mark_safe('The email already belongs to an account.'
-                        ' Please click %s' % self.claim_email_link_html(email) + \
-                        ' if the email belongs to you.'),
-                        email=email)
-
-    def claim_email_link_html(self, email):
-        from group_mail.apps.common.views import claim_email
-        claim_url = reverse(claim_email, kwargs={'email': email})
-        return '<a href="%s">here</a>' % claim_url
+                raise CustomUser.DuplicateEmail(email=email, include_claim_link=True)
 
 
 class ClaimEmailForm(PasswordResetForm):
