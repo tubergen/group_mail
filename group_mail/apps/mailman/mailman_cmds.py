@@ -22,30 +22,50 @@ def is_internal_listname(listname):
     return listname[0] == INTERNAL_LISTNAME_PREFIX
 
 
-def first_newlist(group, owner_email, list_password):
-    # if there are no other groups with group.name, we need to create both
-    # group.name@tmail.com and g-group.id@tmail.com in mailman
-    # owner_email should be something internal, but for debugging we leave it
-    # external
+def newlist(group, owner_email=None, list_password=None):
     try:
-        newlist(group, owner_email, list_password, group.name, add_creator=False)
-        # the second add_creator is false, since we'll add the creator in
-        # the group.add_members call
-        newlist(group, owner_email, list_password, add_creator=False)
+        if _has_unique_name(group):
+            # if there are no other groups with group.name, we need to create both
+            # group.name@tmail.com and _group.id@tmail.com in mailman
+            newlist_helper(group, listname=group.name)
+        newlist_helper(group, owner_email, list_password)
     except MailmanError:
         raise
 
 
-# all this if not listname junk is a temporary hack
-def newlist(group, owner_email, list_password, listname=None, add_creator=True):
+def _has_unique_name(group):
+    """
+    Returns true if group is the only group with its group.name.
+    i.e.: it's the first group created with its name
+
+    This means we shouldn't delete group objects entirely. If a deleted
+    group's name is cleared, we may run into problems with the subsequent
+    first_newlist() call, since the new group won't really be the first with
+    that name even though this function suggests it is.
+    """
+    from group_mail.apps.group.models import Group
+    return len(Group.objects.filter(name=group.name)) == 1
+
+
+def _get_defaults(group, owner_email, list_password, listname):
+    if not owner_email:
+        owner_email = 'itstubeytime@gmail.com'
+    if not list_password:
+        list_password = group.code
     if not listname:
         listname = to_listname(group)
+    return owner_email, list_password, listname
+
+
+def newlist_helper(group, owner_email=None, list_password=None, listname=None, add_creator=False):
+    owner_email, list_password, listname = \
+            _get_defaults(group, owner_email, list_password, listname)
+
     args = [_get_script_dir('newlist'), listname, owner_email, list_password]
     errors = _exec_cmd(*args, stdin_hook='\n')
     if not errors:
-        # mailman doesn't automatically add the list creator as a member, but
-        # we want to
         if add_creator:
+            # mailman doesn't automatically add the list creator as a member
             errors = add_members(group, owner_email)
         if not errors:
             add_postfix_mysql_alias(listname)
@@ -220,7 +240,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == 'add':
         add_members(group, 'brian.tubergengmail.com\ntubergen@princeton.edu')
     elif len(sys.argv) > 1 and sys.argv[1] == 'new':
-        first_newlist(group, 'brian.tubergen@gmail.com', 'hack')
+        newlist_helper(group, 'brian.tubergen@gmail.com', 'hack', add_creator=True)
     elif len(sys.argv) > 1 and sys.argv[1] == 'rem':
         remove_members(group, ['brian.tubergen@gmail.com',
                                  'tubergen@princeton.edu'])

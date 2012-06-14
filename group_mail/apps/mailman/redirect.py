@@ -1,4 +1,3 @@
-# need to repalce @briantubergen.com with django.site_name or w/e
 """
 redirect_list is called in mailman/Mailman/Queue/Switchboard.py
 to redirect mailman to the proper group_mail mailing list.

@@ -49,11 +49,12 @@ class GroupManager(models.Manager):
         # we expect something might go wrong
         if settings.MODIFY_MAILMAN_DB:
             try:
-                mailman_cmds.first_newlist(group, creator_email, group_code)
+                mailman_cmds.newlist(group)
             except mailman_cmds.MailmanError:
                 raise
 
+        # add_members has to come after we make the mailman list, since it will
+        # try to add members to the mailman list
         group.add_members([creator_email])
-        # TODO: THIS LINE WAS ACTING UP ???
-        # group.add_admin_email(creator_email)
+        group.add_admin_email(creator_email)
         return group
