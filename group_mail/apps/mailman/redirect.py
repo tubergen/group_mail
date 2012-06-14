@@ -1,70 +1,70 @@
+# need to repalce @briantubergen.com with django.site_name or w/e
 """
 redirect_list is called in mailman/Mailman/Queue/Switchboard.py
 to redirect mailman to the proper group_mail mailing list.
 """
 
+import email
 from Mailman.Logging.Syslog import syslog
 from django.core.management import setup_environ
 from group_mail import settings
 setup_environ(settings)
 
-"""
-import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'group_mail.settings'
-"""
-
-"""
-from django.conf import settings
-settings.configure(
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',  # Add 'postgresql_psycopg2',
-            'NAME': 'group_mail_db',                      # Or path to database
-            'USER': 'root',                      # Not used with sqlite3.
-            'PASSWORD': 'root',                  # Not used with sqlite3.
-            'HOST': '',                      # Set to empty string for localhost
-            'PORT': '',                      # Set to empty string for default.
-        }
-    }
-)
-"""
-
-"""
-from django.conf import settings
-settings.configure(
-    DATABASE_ENGINE='django.db.backends.mysql',
-    DATABASE_NAME='group_mail_db',
-    DATABASE_USER='root',
-    DATABASE_PASSWORD='root',
-    DATABASE_HOST='localhost',
-    DATABASE_PORT='',
-    TIME_ZONE='America/New_York',
-)
-"""
 from group_mail.apps.common.models import Email
 from group_mail.apps.mailman.mailman_cmds import to_listname, is_internal_listname
 
+TO_HEADER = 'To'
+DOMAIN = '@' + settings.EMAIL_DOMAIN
+
 
 def redirect_list(msg, data):
+    """
+    Redirects the msg and rewrites the data if this a message
+    to one of our mailing lists.
+
+    In particular, we manipulate data['listname'] and the msg
+    To header to deal with internal/external listnames.
+    """
     syslog('debug', 'in the redirect_list function')
-    sender = msg.get_sender()
-    try:
-        listname = data['listname']
-    except KeyError:
-        syslog('error', 'no listname key in message data')
-        return
-
-    syslog('debug', 'listname: %s', listname)
-
-    real_listname = _get_real_listname(sender, listname)
-    if real_listname:
-        syslog('debug', 'real_listname: %s', real_listname)
+    if _sent_to_mailing_list(msg):
+        sender = msg.get_sender()
         try:
-            msg.replace_header('To', real_listname + '@briantubergen.com')
+            listname = data['listname']
         except KeyError:
-            syslog('error', 'no To header in msg')
+            syslog('error', 'no listname key in message data')
             return
-        data['listname'] = real_listname
+
+        syslog('debug', 'listname: %s', listname)
+
+        real_listname = _get_real_listname(sender, listname)
+        if real_listname:
+            syslog('debug', 'real_listname: %s', real_listname)
+            error = _replace_header(msg, TO_HEADER, real_listname)
+            if error:
+                syslog('error', error)
+                return
+            data['listname'] = real_listname
+
+
+def _sent_to_mailing_list(msg):
+    """
+    Returns True if msg was sent to a mailing list,
+    i.e. sent to an email that ends with our site's domain.
+    """
+    fieldvals = msg.get_all(TO_HEADER)
+    for name, addr in email.utils.getaddresses(fieldvals):
+        syslog('debug', 'addr: %s', addr)
+        if addr.find(DOMAIN) != -1:
+            return True
+    return False
+
+
+def _replace_header(msg, header, real_listname):
+    try:
+        msg.replace_header(header, real_listname + DOMAIN)
+        return None
+    except KeyError:
+        return 'no %s header in msg' % header
 
 
 def _get_real_listname(sender_email, listname):
@@ -78,13 +78,18 @@ def _get_real_listname(sender_email, listname):
         e.g. listname = _4839@tmail.com ==> return group@tmail.com
     """
     if is_internal_listname(listname):
-        return _get_group_name_from_internal_name(listname)
+        name = _get_group_name_from_internal_name(listname)
     else:
         # listname is the name of the relevant group
-        return _get_internal_name_from_group_name(sender_email, listname)
+        name = _get_internal_name_from_group_name(sender_email, listname)
+    return name
 
 
 def _get_group_name_from_internal_name(internal_name):
+    """
+    Returns the external name of the list whose group id is given by
+    internal_name, since internal name takes the form _id.
+    """
     from group_mail.apps.group.models import Group
     group_id = internal_name[1:]
     try:
