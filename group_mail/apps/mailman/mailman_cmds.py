@@ -13,6 +13,8 @@ INTERNAL_LISTNAME_PREFIX = '_'
 
 
 def to_listname(group):
+    if not group:
+        return None
     # internal, private listnames will start with _
     name = '%c%d' % (INTERNAL_LISTNAME_PREFIX, group.id)
     return name

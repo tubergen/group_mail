@@ -9,7 +9,7 @@ from group_mail.apps.common.models import CustomUser, Email
 class Group(models.Model):
     MAX_LEN = 20  # max length of group name, code
     ALLOWED_CHARS = "Only numbers and letters are allowed."
-    name = models.CharField(max_length=MAX_LEN, unique=True)
+    name = models.CharField(max_length=MAX_LEN)
     code = models.CharField(max_length=MAX_LEN)
     # member management should go through add_members() and remove_members()
     # members = models.ManyToManyField(CustomUser, related_name='memberships')
@@ -62,7 +62,6 @@ class Group(models.Model):
         except Email.DoesNotExist:
             raise
         if admin_email_obj not in self.emails.all():
-            temp = self.emails.all()
             raise CustomException('Group admin not a member of group.')
         self.admins.add(admin)
 
@@ -76,9 +75,10 @@ class Group(models.Model):
     """ Custom Exceptions """
 
     class AlreadyExists(CustomException):
-        def __init__(self, msg=None, name=''):
+        def __init__(self, msg=None, name='', code=''):
             if msg is None:
-                msg = "A group with name '%s' already exists." % name
+                msg = "A group with name '%s' and code '%s' already exists." \
+                        % (name, code)
             super(Group.AlreadyExists, self).__init__(msg)
 
     class _FieldTooLong(CustomException):

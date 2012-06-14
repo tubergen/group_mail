@@ -9,12 +9,8 @@ from group_mail.apps.group.forms import CreateGroupForm, JoinGroupForm, AddMembe
 
 @login_required
 def group_info(request, group_name):
-    try:
-        group = Group.objects.get(name=group_name)
-    except Group.DoesNotExist:
-        return HttpResponseRedirect('/')
-
-    if request.user not in group.get_members():
+    group = Group.objects.get_group_for_email(request.user.email_set.all(), group_name)
+    if group is None:
         return HttpResponseRedirect('/')
 
     errors = []

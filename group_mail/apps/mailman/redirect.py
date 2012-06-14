@@ -36,13 +36,15 @@ def redirect_list(msg, data):
         syslog('debug', 'listname: %s', listname)
 
         real_listname = _get_real_listname(sender, listname)
+        syslog('debug', 'real_listname: %s', str(real_listname))
         if real_listname:
-            syslog('debug', 'real_listname: %s', real_listname)
             error = _replace_header(msg, TO_HEADER, real_listname)
             if error:
                 syslog('error', error)
                 return
             data['listname'] = real_listname
+    else:
+        syslog('debug', "email wasn't sent to mailing list")
 
 
 def _sent_to_mailing_list(msg):
@@ -103,16 +105,17 @@ def _get_internal_name_from_group_name(sender_email, group_name):
     Returns the internal name of the list which is associated with group_name
     and to which sender_email is subscribed.
     """
+    from group_mail.apps.group.models import Group
+    syslog('debug', 'attempting to get internal name')
     try:
         email_obj = Email.objects.get(email=sender_email)
     except Email.DoesNotExist:
         syslog('error', "email object didn't exist: %s " % sender_email)
         return None
 
-    for group in email_obj.group_set.all():
-        if group.name == group_name:
-            return to_listname(group)
+    group = Group.objects.get_group_for_email([email_obj], group_name)
+    if not group:
+        # we didn't find a single group with the listname for this sender
+        syslog('error', "group object didn't exist")
 
-    # we didn't find a single group with the listname for this sender
-    syslog('error', "group object didn't exist")
-    return None
+    return to_listname(group)
