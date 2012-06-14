@@ -9,20 +9,44 @@ import subprocess
 import MySQLdb
 from django.conf import settings
 
+INTERNAL_LISTNAME_PREFIX = '_'
+
 
 def to_listname(group):
-    name = 'g%d' % group.id
+    # internal, private listnames will start with _
+    name = '%c%d' % (INTERNAL_LISTNAME_PREFIX, group.id)
     return name
 
 
-def newlist(group, owner_email, list_password):
-    listname = to_listname(group)
+def is_internal_listname(listname):
+    return listname[0] == INTERNAL_LISTNAME_PREFIX
+
+
+def first_newlist(group, owner_email, list_password):
+    # if there are no other groups with group.name, we need to create both
+    # group.name@tmail.com and g-group.id@tmail.com in mailman
+    # owner_email should be something internal, but for debugging we leave it
+    # external
+    try:
+        newlist(group, owner_email, list_password, group.name, add_creator=False)
+        # the second add_creator is false, since we'll add the creator in
+        # the group.add_members call
+        newlist(group, owner_email, list_password, add_creator=False)
+    except MailmanError:
+        raise
+
+
+# all this if not listname junk is a temporary hack
+def newlist(group, owner_email, list_password, listname=None, add_creator=True):
+    if not listname:
+        listname = to_listname(group)
     args = [_get_script_dir('newlist'), listname, owner_email, list_password]
     errors = _exec_cmd(*args, stdin_hook='\n')
     if not errors:
         # mailman doesn't automatically add the list creator as a member, but
         # we want to
-        errors = add_members(group, owner_email)
+        if add_creator:
+            errors = add_members(group, owner_email)
         if not errors:
             add_postfix_mysql_alias(listname)
     else:
@@ -83,10 +107,10 @@ class MailmanError(Exception):
     """ Generic Mailman Error """
     def __init__(self, errors=None):
         if not errors:
-            msg = 'Error with mailman command.'
+            self.msg = 'Error with mailman command.'
         else:
-            msg = '\n'.join(errors)
-        super(MailmanError, self).__init__(msg)
+            self.msg = '\n'.join(errors)
+        super(MailmanError, self).__init__(self.msg)
 
     def __str__(self):
         return repr(self.msg)
@@ -153,9 +177,10 @@ def _exec_cmd(*args, **kwargs):
         print >>sys.stderr, '---sysout---\n' + result[0]
         print >>sys.stderr, '---syserr---\n' + result[1]
         return _get_errors(result)
-    except OSError, e:
-        print >>sys.stderr, 'Execution failed: ', e
-        return [e]
+    except OSError:  # , e:
+        raise
+        # print >>sys.stderr, 'Execution failed: ', e
+        # return [e]
 
 
 def add_postfix_mysql_alias(listname):
@@ -184,6 +209,8 @@ def add_postfix_mysql_alias(listname):
 class TestGroup():
     def __init__(self, id=1):
         self.id = id
+        self.name = 'mygroup%d' % id
+        print 'True group name : %s' % self.name
 
 
 def main():
@@ -193,7 +220,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == 'add':
         add_members(group, 'brian.tubergengmail.com\ntubergen@princeton.edu')
     elif len(sys.argv) > 1 and sys.argv[1] == 'new':
-        newlist(group, 'brian.tubergen@gmail.com', 'hack')
+        first_newlist(group, 'brian.tubergen@gmail.com', 'hack')
     elif len(sys.argv) > 1 and sys.argv[1] == 'rem':
         remove_members(group, ['brian.tubergen@gmail.com',
                                  'tubergen@princeton.edu'])

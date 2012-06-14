@@ -31,7 +31,7 @@ class Group(models.Model):
 
         if settings.MODIFY_MAILMAN_DB:
             try:
-                mailman_cmds.remove_members(self.name, member_email_list)
+                mailman_cmds.remove_members(self, member_email_list)
             except mailman_cmds.MailmanError:
                 raise
 
@@ -49,7 +49,7 @@ class Group(models.Model):
 
         if settings.MODIFY_MAILMAN_DB:
             try:
-                mailman_cmds.add_members(self.name, member_email_list)
+                mailman_cmds.add_members(self, member_email_list)
             except mailman_cmds.MailmanError:
                 raise
 
@@ -62,6 +62,7 @@ class Group(models.Model):
         except Email.DoesNotExist:
             raise
         if admin_email_obj not in self.emails.all():
+            temp = self.emails.all()
             raise CustomException('Group admin not a member of group.')
         self.admins.add(admin)
 

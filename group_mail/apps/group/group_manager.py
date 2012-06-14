@@ -41,17 +41,19 @@ class GroupManager(models.Manager):
         except Exception:
             raise
 
+        # we must create the group before the mailman list to get its id
+        group = Group.objects.create(name=group_name,
+                                    code=group_code)
+
         # Try creating the mailman list first, since this is the last place
         # we expect something might go wrong
         if settings.MODIFY_MAILMAN_DB:
             try:
-                mailman_cmds.newlist(group_name, creator_email, group_code)
+                mailman_cmds.first_newlist(group, creator_email, group_code)
             except mailman_cmds.MailmanError:
                 raise
 
-        group = Group.objects.create(name=group_name,
-                                    code=group_code)
-
         group.add_members([creator_email])
-        group.add_admin_email(creator_email)
+        # TODO: THIS LINE WAS ACTING UP ???
+        # group.add_admin_email(creator_email)
         return group
