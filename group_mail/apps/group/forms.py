@@ -63,11 +63,14 @@ class JoinGroupForm(GroupForm, PopulatedEmailForm):
 
 class CreateOrJoinGroupForm(GroupForm, UserEmailForm):
     def clean_email(self):
+        email = self.cleaned_data['email']
         try:
-            return super(CreateOrJoinGroupForm, self).clean_email()
-        except CustomUser.DuplicateEmail as e:
+            CustomUser.objects.get(email=email)
+            e = CustomUser.DuplicateEmail(email=email)
             e.messages[0] += ' Please log in if that account belongs to you.'
-            raise
+            raise e
+        except CustomUser.DoesNotExist:
+            return email
 
 
 class CreateGroupNavbarForm(CreateGroupForm):
