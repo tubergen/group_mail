@@ -1,7 +1,8 @@
 from django import forms
-# from django.contrib.auth.forms import PasswordResetForm
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.registration.forms import UserEmailForm
+
+# CustomPasswordResetForm lives in custom_user_manager.py
 
 
 class AddEmailForm(UserEmailForm):

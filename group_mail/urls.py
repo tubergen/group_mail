@@ -8,6 +8,7 @@ from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
 from group_mail.apps.registration.djviews import password_reset_confirm
 from group_mail.apps.registration.forms import LoginForm
+from group_mail.apps.common.custom_user_manager import CustomPasswordResetForm
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -53,7 +54,7 @@ urlpatterns += patterns('',
 
 # reset password urls
 urlpatterns += patterns('django.contrib.auth.views',
-    (r'^password-reset/$', 'password_reset', {}),
+    (r'^password-reset/$', 'password_reset', {'password_reset_form': CustomPasswordResetForm}),
     (r'^password-reset/done/$', 'password_reset_done', {}),
     (r'^reset/done/$', 'password_reset_complete', {}),
 )

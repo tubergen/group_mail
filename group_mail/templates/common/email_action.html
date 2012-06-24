@@ -9,7 +9,7 @@
 
   <p>{{ success_msg }}</p>
 
-  {% if token != "invalid" %}
+  {% if token != "" %}
   <a href="{% url password_reset_confirm uidb36=uidb36, token=token %}">
     Complete your account
   </a>

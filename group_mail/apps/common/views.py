@@ -76,8 +76,8 @@ def logged_in_homepage(request):
 
 def email_action(request, email, success_msg, action_type, validlink=True, new_user=None):
     # token and uidb36 apparently to have to be some character
-    token = '#'
-    uidb36 = '#'
+    token = ''
+    uidb36 = ''
     if new_user:
         from django.contrib.auth.tokens import default_token_generator
         from django.utils.http import int_to_base36
