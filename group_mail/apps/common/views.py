@@ -75,11 +75,16 @@ def logged_in_homepage(request):
 
 
 def email_action(request, email, success_msg, action_type, validlink=True, new_user=None):
+    if new_user:
+        from django.contrib.auth.tokens import default_token_generator
+        token = default_token_generator.make_token(new_user)
+        uidb36 = int_to_base36(new_user.id)
     return render_to_response('common/email_action.html',
             {'validlink': validlink,
             'success_msg': success_msg,
             'action_type': action_type,
-            'new_user': new_user},
+            'token': token},
+            'uidb36': uidb36},
             context_instance=RequestContext(request))
 
 
@@ -133,12 +138,6 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
     """
     Checks the hash in a claim email link and adds the email to the requested
     account if the link is valid.
-
-    Note that the link will remain valid for a given user.id/password pair
-    until the user logs out.
-
-    If we want to change this behavior, we should write our own token generator
-    and not use the default_token_generator = PasswordResetTokenGenerator.
     """
     assert uidb36 is not None and token is not None and email is not None  # checked by URLconf
     claim_user, valid_uid = _get_user_from_uid(uidb36)

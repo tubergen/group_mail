@@ -6,7 +6,7 @@ from group_mail.apps.common.views import homepage_splitter, claim_email, email_a
 from group_mail.apps.group.views import group_info, create_group, join_group
 from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
-from group_mail.apps.registration.djviews import password_reset_confirm, complete_account
+from group_mail.apps.registration.djviews import password_reset_confirm
 from group_mail.apps.registration.forms import CompleteAccountForm, LoginForm
 
 # Uncomment the next two lines to enable the admin:
@@ -24,7 +24,6 @@ urlpatterns = patterns('',
     (r'^email/removed/(?P<email>.+)$', email_removed),
     (r'^register/$', register),
     (r'^register/thanks/$', register_thanks),
-    (r'^complete/(?P<email>.+)$', complete_account, {}, 'complete_account'),
     (r'^login/$', 'django.contrib.auth.views.login',  {'authentication_form': LoginForm}),
     (r'^logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
 

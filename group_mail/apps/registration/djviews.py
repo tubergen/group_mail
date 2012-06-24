@@ -4,7 +4,7 @@ https://github.com/django/django/blob/master/django/contrib/auth/views.py
 
 I had to change the line marked (***changed***).
 """
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
@@ -70,7 +70,7 @@ def complete_account(request, email,
     try:
         user = CustomUser.objects.get(email=email)
     except CustomUser.DoesNotExist:
-        raise Http404
+        raise Http404()
 
     if request.method == 'POST':
         form = CompleteAccountForm(user, request.POST)

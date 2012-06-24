@@ -52,9 +52,9 @@ class CreateUserForm(UserInfoForm, UserEmailForm):
 class CompleteAccountForm(SetPasswordForm, UserInfoForm):
     def __init__(self, user, *args, **kwargs):
         kwargs['initial'] = {}
-        kwargs['initial']['first_name'] = user.first_name
-        kwargs['initial']['last_name'] = user.last_name
-        kwargs['initial']['phone_number'] = user.phone_number
+        fields = ['first_name', 'last_name', 'phone_number']
+        for field in fields:
+            self._add_initial(kwargs, user, field)
         super(CompleteAccountForm, self).__init__(user, *args, **kwargs)
 
     def __save__(self, commit=True):
@@ -63,6 +63,15 @@ class CompleteAccountForm(SetPasswordForm, UserInfoForm):
         self.user.phone_number = self.cleaned_data['phone_number']
         # call SetPasswordForm's save()
         return super(CompleteAccountForm, self).__save__(commit)
+
+    def _add_initial(self, kwargs, user, field):
+        """
+        Adds user.field to kwarg's initial dictionary if user.field is
+        not None.
+        """
+        value = eval('user.%s' % field)
+        if value:
+            kwargs['initial'][field] = value
 
 
 class LoginForm(AuthenticationForm):
