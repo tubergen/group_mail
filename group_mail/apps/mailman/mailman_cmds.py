@@ -9,20 +9,66 @@ import subprocess
 import MySQLdb
 from django.conf import settings
 
+INTERNAL_LISTNAME_PREFIX = '_'
+
 
 def to_listname(group):
-    name = 'g%d' % group.id
+    if not group:
+        return None
+    # internal, private listnames will start with _
+    name = '%c%d' % (INTERNAL_LISTNAME_PREFIX, group.id)
     return name
 
 
-def newlist(group, owner_email, list_password):
-    listname = to_listname(group)
+def is_internal_listname(listname):
+    return listname[0] == INTERNAL_LISTNAME_PREFIX
+
+
+def newlist(group, owner_email=None, list_password=None):
+    try:
+        if _has_unique_name(group):
+            # if there are no other groups with group.name, we need to create both
+            # group.name@tmail.com and _group.id@tmail.com in mailman
+            newlist_helper(group, listname=group.name)
+        newlist_helper(group, owner_email, list_password)
+    except MailmanError:
+        raise
+
+
+def _has_unique_name(group):
+    """
+    Returns true if group is the only group with its group.name.
+    i.e.: it's the first group created with its name
+
+    This means we shouldn't delete group objects entirely. If a deleted
+    group's name is cleared, we may run into problems with the subsequent
+    first_newlist() call, since the new group won't really be the first with
+    that name even though this function suggests it is.
+    """
+    from group_mail.apps.group.models import Group
+    return len(Group.objects.filter(name=group.name)) == 1
+
+
+def _get_defaults(group, owner_email, list_password, listname):
+    if not owner_email:
+        owner_email = 'itstubeytime@gmail.com'
+    if not list_password:
+        list_password = group.code
+    if not listname:
+        listname = to_listname(group)
+    return owner_email, list_password, listname
+
+
+def newlist_helper(group, owner_email=None, list_password=None, listname=None, add_creator=False):
+    owner_email, list_password, listname = \
+            _get_defaults(group, owner_email, list_password, listname)
+
     args = [_get_script_dir('newlist'), listname, owner_email, list_password]
     errors = _exec_cmd(*args, stdin_hook='\n')
     if not errors:
-        # mailman doesn't automatically add the list creator as a member, but
-        # we want to
-        errors = add_members(group, owner_email)
+        if add_creator:
+            # mailman doesn't automatically add the list creator as a member
+            errors = add_members(group, owner_email)
         if not errors:
             add_postfix_mysql_alias(listname)
     else:
@@ -83,10 +129,10 @@ class MailmanError(Exception):
     """ Generic Mailman Error """
     def __init__(self, errors=None):
         if not errors:
-            msg = 'Error with mailman command.'
+            self.msg = 'Error with mailman command.'
         else:
-            msg = '\n'.join(errors)
-        super(MailmanError, self).__init__(msg)
+            self.msg = '\n'.join(errors)
+        super(MailmanError, self).__init__(self.msg)
 
     def __str__(self):
         return repr(self.msg)
@@ -153,9 +199,10 @@ def _exec_cmd(*args, **kwargs):
         print >>sys.stderr, '---sysout---\n' + result[0]
         print >>sys.stderr, '---syserr---\n' + result[1]
         return _get_errors(result)
-    except OSError, e:
-        print >>sys.stderr, 'Execution failed: ', e
-        return [e]
+    except OSError:  # , e:
+        raise
+        # print >>sys.stderr, 'Execution failed: ', e
+        # return [e]
 
 
 def add_postfix_mysql_alias(listname):
@@ -184,6 +231,8 @@ def add_postfix_mysql_alias(listname):
 class TestGroup():
     def __init__(self, id=1):
         self.id = id
+        self.name = 'mygroup%d' % id
+        print 'True group name : %s' % self.name
 
 
 def main():
@@ -193,7 +242,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == 'add':
         add_members(group, 'brian.tubergengmail.com\ntubergen@princeton.edu')
     elif len(sys.argv) > 1 and sys.argv[1] == 'new':
-        newlist(group, 'brian.tubergen@gmail.com', 'hack')
+        newlist_helper(group, 'brian.tubergen@gmail.com', 'hack', add_creator=True)
     elif len(sys.argv) > 1 and sys.argv[1] == 'rem':
         remove_members(group, ['brian.tubergen@gmail.com',
                                  'tubergen@princeton.edu'])

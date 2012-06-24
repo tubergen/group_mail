@@ -13,7 +13,6 @@ class CustomUserModelBackend(ModelBackend):
             elif not password:
                 # allows us to authenticate and subsequently log in
                 # users who haven't set a password
-                print user
                 return user
         except self.user_class.DoesNotExist:
             return None

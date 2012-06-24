@@ -29,9 +29,11 @@ class CreateGroupForm(GroupForm, PopulatedEmailForm):
         return group_name
 
     def clean_group_code(self):
+        group_name = self.cleaned_data['group_name']
         group_code = self.cleaned_data['group_code']
         try:
             Group.objects.validate_group_code(group_code)
+            Group.objects.validate_group_uniqueness(group_name, group_code)
         except forms.ValidationError:
             raise
         return group_code
@@ -40,27 +42,35 @@ class CreateGroupForm(GroupForm, PopulatedEmailForm):
 class JoinGroupForm(GroupForm, PopulatedEmailForm):
     def clean_group_name(self):
         group_name = self.cleaned_data['group_name']
-        try:
-            self.group = Group.objects.get(name=group_name)
-        except Group.DoesNotExist:
+        self.groups = Group.objects.filter(name=group_name)
+        if len(self.groups) == 0:
             raise forms.ValidationError('The group %s does not exist.' % group_name)
         return group_name
 
     def clean_group_code(self):
         group_code = self.cleaned_data['group_code']
-        if self.group:
-            if self.group.code != group_code:
-                raise Group.CodeInvalid(name=self.group.name, code=group_code)
-        return group_code
+        if self.groups:
+            for group in self.groups:
+                if group.code == group_code:
+                    return group_code
+            # we didn't find a single group with this group code
+            raise Group.CodeInvalid(name=self.group.name, code=group_code)
+        else:
+            # we'll focus the user on the 'no group with that name' error by
+            # returning cleanly here
+            return group_code
 
 
 class CreateOrJoinGroupForm(GroupForm, UserEmailForm):
     def clean_email(self):
+        email = self.cleaned_data['email']
         try:
-            return super(CreateOrJoinGroupForm, self).clean_email()
-        except CustomUser.DuplicateEmail as e:
+            CustomUser.objects.get(email=email)
+            e = CustomUser.DuplicateEmail(email=email)
             e.messages[0] += ' Please log in if that account belongs to you.'
-            raise
+            raise e
+        except CustomUser.DoesNotExist:
+            return email
 
 
 class CreateGroupNavbarForm(CreateGroupForm):
