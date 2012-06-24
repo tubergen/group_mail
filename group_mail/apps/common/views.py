@@ -6,6 +6,7 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
 from group_mail.apps.common.models import CustomUser
+from group_mail.apps.registration.djviews import complete_account
 from group_mail.apps.group.views import create_group, join_group
 from group_mail.apps.group.forms import CreateOrJoinGroupForm
 from group_mail.apps.common.forms import AddEmailForm, ClaimEmailForm
@@ -82,7 +83,7 @@ def email_action(request, email, success_msg, action_type, validlink=True):
             context_instance=RequestContext(request))
 
 
-def email_claim(request, email, validlink):
+def email_claim(request, email, validlink, new_user):
     success_msg = 'Successfully claimed %s, which now belongs to your account.' % email
     return email_action(request, email, success_msg, "claim", validlink)
 
@@ -142,6 +143,7 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
     assert uidb36 is not None and token is not None and email is not None  # checked by URLconf
     claim_user, valid_uid = _get_user_from_uid(uidb36)
     validlink = False
+    new_user = None
     if valid_uid and claim_email_token_generator.check_token(email, token):
         # get the user associated with the claimed_email and remove that email
         # from the user's account
@@ -149,14 +151,12 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
         old_user.remove_email(email)
 
         # add the email to the claim_user's account
-        _add_email_to_claim_user(email, claim_user)
+        new_user = _add_email_to_claim_user(email, claim_user)
 
         # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
         validlink = True
-    else:
-        raise Exception(str(valid_uid))
 
-    return email_claim(request, email, validlink)
+    return email_claim(request, email, validlink, new_user)
 
 
 def _get_user_from_uid(uidb36):
@@ -179,8 +179,13 @@ def _get_user_from_uid(uidb36):
 
 
 def _add_email_to_claim_user(email, claim_user):
+    """
+    Adds email to claim_user. If we create a new account for the user because
+    claim_user is None, return the new user. Else, return None.
+    """
     if claim_user:
         claim_user.populate(email)
+        return None
     else:
         # need to create a new account for the user
-        CustomUser.objects.create_user(email=email)
+        return CustomUser.objects.create_user(email=email)

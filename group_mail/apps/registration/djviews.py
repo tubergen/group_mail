@@ -13,6 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.utils.http import base36_to_int
 from django.template.response import TemplateResponse
 from group_mail.apps.common.models import CustomUser
+from group_mail.apps.registration.forms import CompleteAccountForm
 
 
 # Doesn't need csrf_protect since no-one can guess the URL
@@ -59,3 +60,26 @@ def password_reset_confirm(request, uidb36=None, token=None,
         context.update(extra_context)
     return TemplateResponse(request, template_name, context,
                             current_app=current_app)
+
+
+# Doesn't need csrf_protect since no-one can guess the URL
+@sensitive_post_parameters()
+@never_cache
+def complete_account(request,
+                    user,
+                    template_name='registration/password_reset_confirm.html'):
+    """
+    if user is none, we're gonna have problems
+    """
+    if request.method == 'POST':
+        form = CompleteAccountForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            redirect = reverse('django.contrib.auth.views.password_reset_complete')
+            return HttpResponseRedirect(redirect)
+        else:
+            raise Exception(form.errors)
+    else:
+        form = CompleteAccountForm(user)
+    context = {'form': form}
+    return TemplateResponse(request, template_name, context)

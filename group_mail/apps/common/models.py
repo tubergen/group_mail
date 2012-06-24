@@ -74,7 +74,9 @@ class CustomUser(User):
         except Email.DoesNotExist:
             # that's fine; the email obj is already deleted
             pass
-        self.username, self.email, self.phone_number = [''] * 3
+        # TODO: below line is causing a duplicate username error
+        import time
+        self.username, self.email, self.phone_number = [time.time()] * 3
         self.is_active = False
         self.save()
 

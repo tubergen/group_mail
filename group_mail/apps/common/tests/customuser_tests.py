@@ -1,3 +1,11 @@
+"""
+need to unit test deactivate to ensure that we can deactivate multiple accounts
+(possible issues with duplicate entry for username = '', etc
+
+        # self.username, self.email, self.phone_number = [None] * 3
+"""
+
+
 from django.db import IntegrityError
 from django.test import TestCase
 from group_mail.apps.common.models import CustomUser, Email
