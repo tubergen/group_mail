@@ -101,17 +101,21 @@ def email_removed(request, email):
     return email_action(request, email, success_msg, "removed")
 
 
-@login_required
 def claim_email(request, email):
-    if request.user.has_email(email):
+    if request.user.is_authenticated():
+        user = request.user
+    else:
+        user = None
+
+    if user and user.has_email(email):
         # there's no need to claim the email, so redirect
         return HttpResponseRedirect(reverse(homepage_splitter))
 
     if request.method == 'POST':
-        form = ClaimEmailForm(request.user, request.POST)
+        form = ClaimEmailForm(user, request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            form.save(claim_user=request.user)
+            form.save(claim_user=user)
             return HttpResponseRedirect(reverse(claim_email_sent,
                 kwargs={'email': email}))
     else:
@@ -128,7 +132,6 @@ def claim_email_sent(request, email):
             context_instance=RequestContext(request))
 
 
-@login_required
 def claim_email_confirm(request, uidb36=None, token=None, email=None):
     """
     Checks the hash in a claim email link and adds the email to the requested
@@ -140,17 +143,12 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
     If we want to change this behavior, we should write our own token generator
     and not use the default_token_generator = PasswordResetTokenGenerator.
     """
-    assert uidb36 is not None and token is not None  and email is not None  # checked by URLconf
-    try:
-        uid_int = base36_to_int(uidb36)
-        claim_user = CustomUser.objects.get(id=uid_int)
-    except (ValueError, CustomUser.DoesNotExist):
-        claim_user = None
-
+    assert uidb36 is not None and token is not None and email is not None  # checked by URLconf
+    claim_user, valid_uid = _get_user_from_uid(uidb36)
     validlink = False
-    if claim_user is not None and default_token_generator.check_token(claim_user, token):
+    if valid_uid and default_token_generator.check_token(claim_user, token):
         # the logged in user should be the same as the user given by the uid
-        assert request.user.id == claim_user.id
+        # assert request.user.id == claim_user.id
 
         # get the user associated with the claimed_email and remove that email
         # from the user's account
@@ -158,9 +156,36 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
         old_user.remove_email(email)
 
         # add the email to the claim_user's account
-        claim_user.populate(email)
+        _add_email_to_claim_user(email, claim_user)
 
         # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
         validlink = True
 
     return email_claim(request, email, validlink)
+
+
+def _get_user_from_uid(uidb36):
+    """
+    Return a tuple (user, valid_uid), where user is the user given by the uid
+    (possibly None) and valid_uid tells us whether the uid is valid.
+
+    A uid is invalid if it is nonzero and no user exists with that uid.
+    """
+    valid_uid = True
+    uid_int = base36_to_int(uidb36)
+    if uid_int == 0:
+        claim_user = None
+    else:
+        try:
+            claim_user = CustomUser.objects.get(id=uid_int)
+        except (ValueError, CustomUser.DoesNotExist):
+            valid_uid = False
+    return claim_user, valid_uid
+
+
+def _add_email_to_claim_user(email, claim_user):
+    if claim_user:
+        claim_user.populate(email)
+    else:
+        # need to create a new account for the user
+        CustomUser.objects.create_user(email=email)

@@ -25,7 +25,7 @@ class AddEmailForm(UserEmailForm):
                 raise CustomUser.DuplicateEmail(
                         msg='The email already belongs to your account.')
             else:
-                raise CustomUser.DuplicateEmail(email=email, include_claim_link=True)
+                raise CustomUser.DuplicateEmail(email=email, include_link=True)
 
 
 class ClaimEmailForm(forms.Form):
@@ -37,7 +37,7 @@ class ClaimEmailForm(forms.Form):
 
     def clean_email(self):
         email = self.cleaned_data['email']
-        if self.claim_user.has_email(email):
+        if self.claim_user and self.claim_user.has_email(email):
             raise CustomUser.DuplicateEmail(msg='The email already belongs to your account.')
         return email
 
@@ -50,27 +50,28 @@ class ClaimEmailForm(forms.Form):
         """
         Generates a one-use only link for claiming an email and sends it to the
         email.
+
+        We use the claiming user to generate the uid, since if the claim_request
+        is successful, that's the account to which we'll add the email.
         """
-        from django.contrib.auth.tokens import default_token_generator
         from django.contrib.sites.models import get_current_site
         from django.template import loader
         from django.utils.http import int_to_base36
         from django.core.mail import send_mail
+        from group_mail.apps.common.tokens import claim_email_token_generator
 
         current_site = get_current_site(request)
         site_name = current_site.name
         domain = current_site.domain
         claim_email_addr = self.cleaned_data['email']
-        # below, we use claim_user to generate the uid and token.
-        # this is because, if the 'claim request' is successful, claim_user
-        # is the account to which we'll add the email
+        uid = claim_user.id if claim_user else 0
         c = {
             'email': claim_email_addr,
             'domain': domain,
             'site_name': site_name,
-            'uid': int_to_base36(claim_user.id),
+            'uid': int_to_base36(uid),
             'claim_user': claim_user,
-            'token': default_token_generator.make_token(claim_user),
+            'token': claim_email_token_generator.make_token(claim_email_addr),
             'protocol': 'http',
         }
         subject = loader.render_to_string(subject_template_name, c)

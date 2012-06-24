@@ -126,21 +126,35 @@ class CustomUser(User):
 
     class DuplicateEmail(_DuplicateField):
         @classmethod
-        def claim_link_error_msg(class_, email):
+        def link_error_msg(class_, email):
             return mark_safe('The email already belongs to an account.'
-                    ' Please click %s' % class_.claim_email_link_html(email) + \
+                    ' Please click %s' % class_.get_link_html(email) + \
                     ' if the email belongs to you.')
 
         @staticmethod
-        def claim_email_link_html(email):
+        def get_link_html(email):
             from group_mail.apps.common.views import claim_email
             claim_url = reverse(claim_email, kwargs={'email': email})
             return '<a href="%s">here</a>' % claim_url
 
-        def __init__(self, msg=None, email='', include_claim_link=False):
-            if include_claim_link:
-                msg = self.claim_link_error_msg(email)
+        def __init__(self, msg=None, email='', include_link=False):
+            if include_link:
+                msg = self.link_error_msg(email)
             super(CustomUser.DuplicateEmail, self).__init__(msg, 'email', email)
+
+    class DuplicatePrimaryEmail(DuplicateEmail):
+        """
+        We only care about special casing this error when the user is creating an
+        account for the first time. Otherwise DuplicateEmail is likely to be
+        sufficient.
+
+        We can rely on the superclass for most of the implementation.
+        """
+        @staticmethod
+        def get_link_html(email):
+            from django.contrib.auth.views import password_reset
+            claim_url = reverse(password_reset)
+            return '<a href="%s">here</a>' % claim_url
 
     class AlreadyMember(CustomException):
         def __init__(self, msg=None, email='', group_name=''):
