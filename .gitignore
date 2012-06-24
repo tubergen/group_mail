@@ -44,3 +44,7 @@ Thumbs.db
 ##########################
 *.swo
 *.ropeproject*
+
+# Files we don't want on version control #
+##########################################
+local_settings.py
