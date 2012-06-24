@@ -199,3 +199,9 @@ LOGIN_REDIRECT_URL = '/'
 
 # url that @login_required redirects to
 LOGIN_URL = '/login/'
+
+# override global settings with local overrides
+try:
+    from local_settings import *
+except ImportError, e:
+    pass
