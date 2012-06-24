@@ -8,7 +8,14 @@
 {% if validlink %}
 
   <p>{{ success_msg }}</p>
-  <a href="\">Return</a>
+
+  {% if new_user %}
+  <a href="{% url complete_account email=new_user.email %}">
+    Complete your account
+  </a>
+  {% else %}
+    <a href="\">Return</a>
+  {% endif %}
 
 {% else %}
 

@@ -6,7 +6,6 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
 from group_mail.apps.common.models import CustomUser
-from group_mail.apps.registration.djviews import complete_account
 from group_mail.apps.group.views import create_group, join_group
 from group_mail.apps.group.forms import CreateOrJoinGroupForm
 from group_mail.apps.common.forms import AddEmailForm, ClaimEmailForm
@@ -75,17 +74,18 @@ def logged_in_homepage(request):
             context_instance=RequestContext(request))
 
 
-def email_action(request, email, success_msg, action_type, validlink=True):
+def email_action(request, email, success_msg, action_type, validlink=True, new_user=None):
     return render_to_response('common/email_action.html',
             {'validlink': validlink,
             'success_msg': success_msg,
-            'action_type': action_type},
+            'action_type': action_type,
+            'new_user': new_user},
             context_instance=RequestContext(request))
 
 
 def email_claim(request, email, validlink, new_user):
     success_msg = 'Successfully claimed %s, which now belongs to your account.' % email
-    return email_action(request, email, success_msg, "claim", validlink)
+    return email_action(request, email, success_msg, "claim", validlink, new_user)
 
 
 def email_added(request, email):

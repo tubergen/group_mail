@@ -4,7 +4,7 @@ https://github.com/django/django/blob/master/django/contrib/auth/views.py
 
 I had to change the line marked (***changed***).
 """
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
@@ -65,12 +65,13 @@ def password_reset_confirm(request, uidb36=None, token=None,
 # Doesn't need csrf_protect since no-one can guess the URL
 @sensitive_post_parameters()
 @never_cache
-def complete_account(request,
-                    user,
-                    template_name='registration/password_reset_confirm.html'):
-    """
-    if user is none, we're gonna have problems
-    """
+def complete_account(request, email,
+                    template_name='registration/complete_account.html'):
+    try:
+        user = CustomUser.objects.get(email=email)
+    except CustomUser.DoesNotExist:
+        raise Http404
+
     if request.method == 'POST':
         form = CompleteAccountForm(user, request.POST)
         if form.is_valid():
