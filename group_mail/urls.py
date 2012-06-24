@@ -7,7 +7,7 @@ from group_mail.apps.group.views import group_info, create_group, join_group
 from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
 from group_mail.apps.registration.djviews import password_reset_confirm
-from group_mail.apps.registration.forms import CompleteAccountForm, LoginForm
+from group_mail.apps.registration.forms import LoginForm
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -59,8 +59,7 @@ urlpatterns += patterns('django.contrib.auth.views',
 )
 urlpatterns += patterns('',
     (r'^reset/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
-        password_reset_confirm, {'set_password_form': CompleteAccountForm},
-        "password_reset_confirm"),
+        password_reset_confirm, {}, "password_reset_confirm"),
     #    {'post_reset_redirect': 'accounts/login/',
     #     'post_reset_redirect': 'accounts/reset/done/'}),
 )
