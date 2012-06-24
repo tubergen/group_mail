@@ -1,0 +1,24 @@
+<form action="" method="post"> 
+{% csrf_token %}
+{% for field in form %}
+  {# only display fields the user hasn't specified #}
+  {% if not field.name in form.initial.keys %}
+    <div class="submit-field">
+      {{ field.label_tag }}
+      {{ field }}
+      <span class="help-inline">
+        {% if field.errors %}
+        {{ field.errors }}
+        {% else %}
+        {{ field.help_text }}
+        {% endif %}
+      </span>
+    </div>
+  {% else %}
+    <div class="hidden">
+      {{ field }}
+    </div>
+  {% endif %} 
+{% endfor %}
+<input type="submit" value="Submit" />
+</form>
