@@ -1,4 +1,3 @@
-from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
 from django.utils.http import base36_to_int
 from django.http import HttpResponseRedirect
@@ -10,6 +9,7 @@ from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.views import create_group, join_group
 from group_mail.apps.group.forms import CreateOrJoinGroupForm
 from group_mail.apps.common.forms import AddEmailForm, ClaimEmailForm
+from group_mail.apps.common.tokens import claim_email_token_generator
 
 
 def homepage_splitter(request):
@@ -74,7 +74,6 @@ def logged_in_homepage(request):
             context_instance=RequestContext(request))
 
 
-@login_required
 def email_action(request, email, success_msg, action_type, validlink=True):
     return render_to_response('common/email_action.html',
             {'validlink': validlink,
@@ -83,19 +82,16 @@ def email_action(request, email, success_msg, action_type, validlink=True):
             context_instance=RequestContext(request))
 
 
-@login_required
 def email_claim(request, email, validlink):
     success_msg = 'Successfully claimed %s, which now belongs to your account.' % email
     return email_action(request, email, success_msg, "claim", validlink)
 
 
-@login_required
 def email_added(request, email):
     success_msg = 'Successfully added %s to your account.' % email
     return email_action(request, email, success_msg, "added")
 
 
-@login_required
 def email_removed(request, email):
     success_msg = 'Successfully removed %s from your account.' % email
     return email_action(request, email, success_msg, "removed")
@@ -146,10 +142,7 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
     assert uidb36 is not None and token is not None and email is not None  # checked by URLconf
     claim_user, valid_uid = _get_user_from_uid(uidb36)
     validlink = False
-    if valid_uid and default_token_generator.check_token(claim_user, token):
-        # the logged in user should be the same as the user given by the uid
-        # assert request.user.id == claim_user.id
-
+    if valid_uid and claim_email_token_generator.check_token(email, token):
         # get the user associated with the claimed_email and remove that email
         # from the user's account
         old_user = CustomUser.objects.get(email=email)
@@ -160,6 +153,8 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
 
         # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
         validlink = True
+    else:
+        raise Exception(str(valid_uid))
 
     return email_claim(request, email, validlink)
 

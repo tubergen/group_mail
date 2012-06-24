@@ -17,10 +17,10 @@ class ClaimEmailTokenGenerator(PasswordResetTokenGenerator):
     """
     def make_token(self, email):
         user = Email.objects.get(email=email).user
-        super(ClaimEmailTokenGenerator, self).make_token(user)
+        return super(ClaimEmailTokenGenerator, self).make_token(user)
 
     def check_token(self, email, token):
         user = Email.objects.get(email=email).user
-        super(ClaimEmailTokenGenerator, self).check_token(user, token)
+        return super(ClaimEmailTokenGenerator, self).check_token(user, token)
 
 claim_email_token_generator = ClaimEmailTokenGenerator()
