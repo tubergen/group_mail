@@ -45,9 +45,8 @@ class GroupManager(models.Manager):
         subject = loader.render_to_string('group/group_confirm_subject.html', c)
         # Email subject *must not* contain newlines
         subject = ''.join(subject.splitlines())
-        email = loader.render_to_string('group/group_confirm_email.html', c)
-        # send_mail(subject, email, from_email, [claim_email_addr])
-        send_mail(subject, email, None, ['brian.tubergen@gmail.com'])
+        email_html = loader.render_to_string('group/group_confirm_email.html', c)
+        send_mail(subject, email_html, None, [email])
 
     def _get_confirm_url(self, cmd_str, group_name, group_code, email, domain):
         from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd
