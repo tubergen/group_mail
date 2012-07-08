@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.contrib.sites.models import Site
 from group_mail.apps.mailman import mailman_cmds
-from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd
 
 
 class GroupManager(models.Manager):
@@ -50,6 +49,7 @@ class GroupManager(models.Manager):
         send_mail(subject, email, None, ['brian.tubergen@gmail.com'])
 
     def _get_confirm_url(self, cmd_str, group_name, group_code, email):
+        from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd
         """
         Returns the group confirm url for the given cmd_str. Populates
         the GET parameters of the url according to other arguments.
@@ -57,12 +57,14 @@ class GroupManager(models.Manager):
         This probably isn't the right way to get the url for the group
         confirm email, but it's easy.
         """
+        url = None
         if cmd_str == CreateGroupCmd.CMD_STR:
             url = reverse('group_mail.apps.group.views.create_group')
         elif cmd_str == JoinGroupCmd.CMD_STR:
             url = reverse('group_mail.apps.group.views.join_group')
-        url += ('?group_name=%s&group_code=%s&email=%s' % \
-                (group_name, group_code, email))
+        if url:
+            url += ('?group_name=%s&group_code=%s&email=%s' % \
+                    (group_name, group_code, email))
         return url
 
     def validate_group(self, group_name, group_code):
