@@ -101,7 +101,8 @@ class CustomUserManager(UserManager):
     def create(self):
         raise Exception('CustomUser.objects.create() is unsupported')
 
-    def create_user(self, email, password=None, first_name=None, last_name=None, phone_number=None):
+    def create_user(self, email, password=None, first_name=None,
+            last_name=None, phone_number=None, send_welcome=True):
         """
         Creates a CustomUser with the values given by the parameters and returns
         the CustomUser if successful.
@@ -133,11 +134,12 @@ class CustomUserManager(UserManager):
                 password=password)
         user.populate(email, first_name, last_name, phone_number)
 
-        self.send_welcome_email(email)
+        if send_welcome:
+            self.send_welcome_email(email)
         return user
 
     def get_or_create_user(self, email, password=None, first_name=None, \
-            last_name=None, phone_number=None):
+            last_name=None, phone_number=None, send_welcome=True):
         """
         Get's the user with the specified email so long as the phone number
         matches that account. If the phone number doesn't match, raises
@@ -173,7 +175,7 @@ class CustomUserManager(UserManager):
                 raise CustomUser.InconsistentPhoneNumber(email=email)
         else:
             user = self.create_user(email=email, password=password, \
-                    phone_number=phone_number)
+                    phone_number=phone_number, send_welcome=send_welcome)
 
         user.populate(email, first_name, last_name, phone_number)
         return user

@@ -10,7 +10,6 @@ class AddEmailForm(UserEmailForm):
             label="Do you have an email that doesn't appear below?  Add it here:",
             widget=forms.TextInput(attrs={
                 'class': 'input-small',
-                'label': 'hi',
                 'placeholder': 'e.g.: brian@gmail.com'}))
 
     def __init__(self, claim_user, *args, **kwargs):
@@ -30,7 +29,11 @@ class AddEmailForm(UserEmailForm):
 
 
 class ClaimEmailForm(forms.Form):
-    email = forms.EmailField(max_length=CustomUser.MAX_LEN)
+    email = forms.EmailField(max_length=CustomUser.MAX_LEN,
+            label="Do you have an email that doesn't appear below?  Add it here:",
+            widget=forms.TextInput(attrs={
+                'class': 'input-small',
+                'placeholder': 'e.g.: brian@gmail.com'}))
 
     def __init__(self, claim_user, *args, **kwargs):
         super(ClaimEmailForm, self).__init__(*args, **kwargs)
@@ -38,9 +41,22 @@ class ClaimEmailForm(forms.Form):
 
     def clean_email(self):
         email = self.cleaned_data['email']
+        # The call to has_email() below relies on an email obj existing, as
+        # does much of our claim code elsewhere.
+        self._create_email_object(email)
         if self.claim_user and self.claim_user.has_email(email):
             raise CustomUser.DuplicateEmail(msg='The email already belongs to your account.')
         return email
+
+    def _create_email_object(self, email):
+        """
+        Creates an Email object for the email if one doesn't already exist
+        by creating an incomplete user with that email.
+
+        Since the user is going to get a claim-email-confirm email, we don't
+        send him a welcome email.
+        """
+        CustomUser.objects.get_or_create_user(email=email, send_welcome=False)
 
     def save(self,
              subject_template_name='common/claim_email_subject.txt',

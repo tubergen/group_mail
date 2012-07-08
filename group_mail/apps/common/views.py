@@ -48,15 +48,12 @@ def landing_page(request):
 def logged_in_homepage(request):
     groups_by_email = request.user.get_groups_by_email()
     errors = []
-    form = AddEmailForm(request.user)
+    form = ClaimEmailForm(request.user)
     if request.method == 'POST':
         if request.POST.get('add_email_submit'):
-            form = AddEmailForm(request.user, request.POST)
+            form = ClaimEmailForm(request.user, request.POST)
             if form.is_valid():
-                email = form.cleaned_data['email']
-                request.user.populate(email=email)
-                return HttpResponseRedirect(reverse(email_added,
-                    kwargs={'email': email}))
+                return _valid_claim_email_resp(form, request.user)
         elif request.POST.get('remove_email_submit'):
             email = request.POST.get('remove_email_submit')
             if len(request.user.email_set.all()) > 1:
@@ -110,6 +107,23 @@ def email_removed(request, email):
     return email_action(request, email, success_msg, "removed")
 
 
+def _valid_claim_email_resp(form, user):
+    email = form.cleaned_data['email']
+    # we want to create an email object for the email if it doesn't already
+    # exist, since much of our claim logic assumes one exists
+    _create_email_object(email)
+    form.save(claim_user=user)
+    return HttpResponseRedirect(reverse(claim_email_sent,
+        kwargs={'email': email}))
+
+
+def _create_email_object(email):
+    """
+    Creates an Email object by creating an incomplete user with that email.
+    """
+    CustomUser.objects.get_or_create_user(email=email)
+
+
 def claim_email(request, email):
     if request.user.is_authenticated():
         user = request.user
@@ -123,10 +137,7 @@ def claim_email(request, email):
     if request.method == 'POST':
         form = ClaimEmailForm(user, request.POST)
         if form.is_valid():
-            email = form.cleaned_data['email']
-            form.save(claim_user=user)
-            return HttpResponseRedirect(reverse(claim_email_sent,
-                kwargs={'email': email}))
+            return _valid_claim_email_resp(form, user)
     else:
         form = ClaimEmailForm(request.user)
     return render_to_response('common/claim_email_form.html',
