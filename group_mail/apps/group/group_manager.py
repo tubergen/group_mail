@@ -3,7 +3,10 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
+from django.contrib.sites.models import Site
 from group_mail.apps.mailman import mailman_cmds
+from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd
 
 
 class GroupManager(models.Manager):
@@ -23,24 +26,44 @@ class GroupManager(models.Manager):
         2) somebody adds the user to the group
         """
         from django.core.mail import send_mail
+        from django.template import loader
         try:
             validate_email(email)
         except ValidationError:
             raise
-        subject = 'hi'
-        email = 'email'
-        """
+        current_site = Site.objects.get_current()
+        url = self._get_confirm_url(cmd_str, group_name, group_code, email)
         c = {
+            'cmd_str': cmd_str,
             'email': email,
-            'domain': domain,
-            'site_name': site_name,
-            'uid': int_to_base36(uid),
-            'claim_user': claim_user,
-            'token': group_confirm_token_generator.make_token(email, group_name, group_code),
-            'protocol': 'http',
+            'group_name': group_name,
+            'group_code': group_code,
+            'site_name': current_site.name,
+            'confirm_group_url': url
         }
-        """
+
+        subject = loader.render_to_string('group/group_confirm_subject.html', c)
+        # Email subject *must not* contain newlines
+        subject = ''.join(subject.splitlines())
+        email = loader.render_to_string('group/group_confirm_email.html', c)
+        # send_mail(subject, email, from_email, [claim_email_addr])
         send_mail(subject, email, None, ['brian.tubergen@gmail.com'])
+
+    def _get_confirm_url(self, cmd_str, group_name, group_code, email):
+        """
+        Returns the group confirm url for the given cmd_str. Populates
+        the GET parameters of the url according to other arguments.
+
+        This probably isn't the right way to get the url for the group
+        confirm email, but it's easy.
+        """
+        if cmd_str == CreateGroupCmd.CMD_STR:
+            url = reverse('group_mail.apps.group.views.create_group')
+        elif cmd_str == JoinGroupCmd.CMD_STR:
+            url = reverse('group_mail.apps.group.views.join_group')
+        url += ('?group_name=%s&group_code=%s&email=%s' % \
+                (group_name, group_code, email))
+        return url
 
     def validate_group(self, group_name, group_code):
         self.validate_group_uniqueness(group_name, group_code)
