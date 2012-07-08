@@ -62,14 +62,12 @@ class ClaimEmailForm(forms.Form):
         from group_mail.apps.common.tokens import claim_email_token_generator
 
         current_site = get_current_site(request)
-        site_name = current_site.name
-        domain = current_site.domain
         claim_email_addr = self.cleaned_data['email']
         uid = claim_user.id if claim_user else 0
         c = {
             'email': claim_email_addr,
-            'domain': domain,
-            'site_name': site_name,
+            'domain': current_site.domain,
+            'site_name': current_site.name,
             'uid': int_to_base36(uid),
             'claim_user': claim_user,
             'token': claim_email_token_generator.make_token(claim_email_addr),

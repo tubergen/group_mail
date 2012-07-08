@@ -50,6 +50,17 @@ def group_info(request, group_name):
             context_instance=RequestContext(request))
 
 
+def get_initial(request):
+    """
+    Returns the initial values dict for a create group form or a join group
+    form if they appear in request.GET.
+    """
+    if request.method == 'GET':
+        return {'group_name': request.GET.get('group_name', ''),
+                'group_code': request.GET.get('group_code', ''),
+                'email': request.GET.get('email', '')}
+
+
 @login_required
 def create_group(request):
     if request.method == 'POST':
@@ -62,7 +73,7 @@ def create_group(request):
                     form.cleaned_data['group_code'])
             return HttpResponseRedirect('/group/%s' % group_name)
     else:
-        form = CreateGroupForm(request.user)
+        form = CreateGroupForm(request.user, initial=get_initial(request))
 
     return render_to_response('group/create_or_join.html',
                               {'form': form,
@@ -85,7 +96,7 @@ def join_group(request):
                 pass
             return HttpResponseRedirect('/group/%s' % group_name)
     else:
-        form = JoinGroupForm(request.user)
+        form = JoinGroupForm(request.user, initial=get_initial(request))
 
     return render_to_response('group/create_or_join.html',
                               {'form': form,

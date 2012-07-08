@@ -1,0 +1,15 @@
+{% if cmd_str == "join" %}
+  You're receiving this message because your email was signed up for the group {{ group_name }} from a phone number we didn't recognize.
+{% else %}
+  You're receiving this message because the group {{ group_name }} was created using this email from a phone number we didn't recognize.
+{% endif %}
+
+If you wish to confirm this action, please follow the link below and log in. 
+
+{{ confirm_group_url }}
+
+If you plan to use this phone number in the future, you should change the phone number for your account on the website.
+
+Thanks for using our site!
+
+The {{ site_name }} team.
