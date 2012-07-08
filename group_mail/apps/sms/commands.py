@@ -39,7 +39,7 @@ class Command(Utilities):
         self.expected_sms_len = None
         self.cmd = cmd
 
-    def invalid_email_resp(email)
+    def invalid_email_resp(self, email):
         return self.respond('The email %s appears to be invalid. Please try again.' % email)
 
     def get_or_create_user(self, sms_dict, from_number):
@@ -58,7 +58,7 @@ class Command(Utilities):
             try:
                 Group.objects.send_confirm_email(**sms_dict)
             except ValidationError:
-                resp = invalid_email_resp(email)
+                resp = self.invalid_email_resp(email)
         except CustomUser.DuplicateEmail:
             raise  # this case should never arise. we should get the user with that email.
         except CustomUser.DuplicatePhoneNumber:
@@ -66,7 +66,7 @@ class Command(Utilities):
         except ValidationError:
             # TODO: validation error is no longer specific to email. This
             # could be another error. We need a way to be more certain.
-            resp = invalid_email_resp(email)
+            resp = self.invalid_email_resp(email)
         return user, resp
 
     def get_cmd_info(self, sms_fields, from_number):
