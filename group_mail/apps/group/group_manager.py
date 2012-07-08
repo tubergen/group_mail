@@ -10,7 +10,7 @@ class GroupManager(models.Manager):
 
     valid_pattern = '^[\w\d]+$'
 
-    def send_confirm_email(cmd_str, group_name, group_code, email):
+    def send_group_confirm_email(self, cmd_str, group_name, group_code, email):
         """
         Sends an email to the user letting him know that he
         created or was added to the group (depending on the value of

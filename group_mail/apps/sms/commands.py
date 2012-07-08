@@ -56,7 +56,7 @@ class Command(Utilities):
             resp = self.respond(str(e), "We'll send you an email with instructions about how"
                     " to confirm your identity and %s the group." % str(self))
             try:
-                Group.objects.send_confirm_email(**sms_dict)
+                Group.objects.send_group_confirm_email(**sms_dict)
             except ValidationError:
                 resp = self.invalid_email_resp(email)
         except CustomUser.DuplicateEmail:
@@ -75,20 +75,21 @@ class Command(Utilities):
         # we don't use the user, but we still call get_or_create_user() to make sure
         # that the user's account exists, or to create an account if it doesn't
         user, resp = self.get_or_create_user(sms_dict, from_number)
-        return  resp
+        return sms_dict, resp
 
     def execute(self, sms_fields, from_number):
         if self.expected_sms_len and len(sms_fields) != self.expected_sms_len:
             return self.invalid_cmd(sms_fields)
         else:
             kwargs, resp = self.get_cmd_info(sms_fields, from_number)
+            del kwargs['cmd_str']  # execute_hook doesn't take cmd_str as a parameter
             if resp:  # if there was an error
                 return resp
             else:
                 return self.execute_hook(**kwargs)
 
     # Subclasses should override this
-    def execute_hook(self, sms_fields, user_identifier):
+    def execute_hook(self, *args, **kwargs):
         return self.unrecognized_cmd()
 
     def valid_cmds(self):
