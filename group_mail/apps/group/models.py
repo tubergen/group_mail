@@ -14,7 +14,7 @@ class Group(models.Model):
     # member management should go through add_members() and remove_members()
     # members = models.ManyToManyField(CustomUser, related_name='memberships')
     emails = models.ManyToManyField(Email)
-    admins = models.ManyToManyField(CustomUser)
+    admin_emails = models.ManyToManyField(Email, related_name='groups_administrated')
 
     objects = GroupManager()
 
@@ -26,6 +26,7 @@ class Group(models.Model):
             try:
                 email_obj = Email.objects.get(email=email)
                 self.emails.remove(email_obj)
+                self.admins.remove(email_obj)
             except Email.DoesNotExist:
                 pass
 
@@ -56,21 +57,14 @@ class Group(models.Model):
     def get_members(self):
         return [email_obj.user for email_obj in self.emails.all()]
 
-    def add_admin(self, admin):
+    def add_admin_email(self, admin_email):
         try:
-            admin_email_obj = Email.objects.get(email=admin.email)
+            admin_email_obj = Email.objects.get(email=admin_email)
         except Email.DoesNotExist:
             raise
         if admin_email_obj not in self.emails.all():
             raise CustomException('Group admin not a member of group.')
-        self.admins.add(admin)
-
-    def add_admin_email(self, admin_email):
-        try:
-            admin = CustomUser.objects.get(email=admin_email)
-        except CustomUser.DoesNotExist:
-            raise
-        self.add_admin(admin)
+        self.admin_emails.add(admin_email_obj)
 
     """ Custom Exceptions """
 
