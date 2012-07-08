@@ -1,12 +1,46 @@
 import re
 from django.db import models
 from django.conf import settings
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from group_mail.apps.mailman import mailman_cmds
 
 
 class GroupManager(models.Manager):
 
     valid_pattern = '^[\w\d]+$'
+
+    def send_confirm_email(cmd_str, group_name, group_code, email):
+        """
+        Sends an email to the user letting him know that he
+        created or was added to the group (depending on the value of
+        create_or_join).
+
+        This email let's the user confirm his action.
+
+        We send this when
+        1) the user tries to join a group from a phone number we don't recognize
+        2) somebody adds the user to the group
+        """
+        from django.core.mail import send_mail
+        try:
+            validate_email(email)
+        except ValidationError:
+            raise
+        subject = 'hi'
+        email = 'email'
+        """
+        c = {
+            'email': email,
+            'domain': domain,
+            'site_name': site_name,
+            'uid': int_to_base36(uid),
+            'claim_user': claim_user,
+            'token': group_confirm_token_generator.make_token(email, group_name, group_code),
+            'protocol': 'http',
+        }
+        """
+        send_mail(subject, email, None, ['brian.tubergen@gmail.com'])
 
     def validate_group(self, group_name, group_code):
         self.validate_group_uniqueness(group_name, group_code)
