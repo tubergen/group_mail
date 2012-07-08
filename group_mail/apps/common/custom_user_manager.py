@@ -101,6 +101,20 @@ class CustomUserManager(UserManager):
     def create(self):
         raise Exception('CustomUser.objects.create() is unsupported')
 
+    def create_fresh_user(self, email, password=None, first_name=None,
+            last_name=None, phone_number=None, send_welcome=True):
+        """
+        Creates a fresh, new account for the email, even if the email
+        is already associated with a different account. The email will be
+        removed from the other account if that "other account" exists.
+        """
+        user = super(CustomUserManager, self).create_user(
+                username=email, email=email, password=password)
+        user.populate(email, first_name, last_name, phone_number)
+
+        if send_welcome:
+            self.send_welcome_email(email)
+
     def create_user(self, email, password=None, first_name=None,
             last_name=None, phone_number=None, send_welcome=True):
         """
@@ -128,14 +142,9 @@ class CustomUserManager(UserManager):
                 raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
 
         # create the user
-        user = super(CustomUserManager, self).create_user(
-                username=email,
-                email=email,
-                password=password)
-        user.populate(email, first_name, last_name, phone_number)
+        self.create_fresh_user(email, password, first_name, last_name,
+                phone_number, send_welcome)
 
-        if send_welcome:
-            self.send_welcome_email(email)
         return user
 
     def get_or_create_user(self, email, password=None, first_name=None, \

@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from group_mail.apps.common.errors import CustomException
 from group_mail.apps.common.custom_user_manager import CustomUserManager
+from group_mail.apps.common.utils import EmailUtils
 
 
 class CustomUser(User):
@@ -13,25 +14,29 @@ class CustomUser(User):
     objects = CustomUserManager()
 
     def is_complete(self):
-        """ returns true if the CustomUser has a complete account
-            (all #user cmd info populated) and false otherwise """
+        """
+        Returns true if the CustomUser has a complete account
+        (all #user cmd info populated) and false otherwise
+        """
         if self.first_name and self.last_name and self.phone_number:
             return True
         else:
             return False
 
     def populate(self, email=None, first_name=None, last_name=None, phone_number=None):
+        """
+        Populates the user's account with the parameter values.
+
+        If the email already exists with a different account, the email will
+        be removed from the other account and added to this one.
+        """
         if email:
-            # check if this account already has the email
             try:
-                found_email = self.email_set.get(email=email)
+                email_obj = Email.objects.get(email=email)
+                if email_obj not in self.email_set.all():
+                    EmailUtils.add_existent_email(self.email_set, email_obj)
             except Email.DoesNotExist:
-                found_email = None
-
-            if not found_email:
-                # This will raise an IntegrityError if the email object already exists
                 Email.objects.create(email=email, user=self)
-
         if first_name and not self.first_name:
             self.first_name = first_name
         if last_name and not self.last_name:
@@ -68,12 +73,6 @@ class CustomUser(User):
         Deactivates account by freeing up unique fields and setting account
         to be inactive.
         """
-        try:
-            email_obj = Email.objects.get(email=self.email)
-            email_obj.delete()
-        except Email.DoesNotExist:
-            # that's fine; the email obj is already deleted
-            pass
         # TODO: below line is causing a duplicate username error
         import time
         self.username, self.email, self.phone_number = [time.time()] * 3
@@ -82,30 +81,36 @@ class CustomUser(User):
 
     def remove_email(self, email, unsubscribe=False):
         """
-        Removes the email from the user's account. If unsubscribe is True,
-        we also remove the email from any groups and mailman mailing lists that
-        it's associated with.
+        Removes the email from the user's account.
+
+        If unsubscribe is True, we also remove the email from any groups and
+        mailman mailing lists that it's associated with. The email object is
+        deleted.
+
+        If unsubscribe is false, we'll create a new, incomplete account where
+        the removed email will reside.
         """
         try:
             email_obj = Email.objects.get(email=email)
         except Email.DoesNotExist:
             raise
 
+        assert email_obj.user.id == self.id
+
+        """
+        If we're removing the primary email, we need to change the primary
+        email and the username.
+
+        We purposefully do this *before* attempting to create_fresh_user(),
+        since otherwise we may have username conflicts.
+        """
+        EmailUtils.change_owner_info(email_obj)
+
         if unsubscribe:
             email_obj.unsubscribe_all()
-        email_obj.delete()
-
-        if self.email == email:
-            # if we've removed the primary email, we need to change the primary
-            # email and the username
-            my_emails = self.email_set.all()
-            if len(my_emails) != 0:
-                self.email = my_emails[0].email
-                self.username = my_emails[0].email
-                self.save()
-            else:
-                # there are no other emails for this account, so deactivate it
-                self.deactivate()
+            email_obj.delete()
+        else:
+            CustomUser.objects.create_fresh_user(email=email)
 
     def has_email(self, email):
         email_obj = Email.objects.get(email=email)

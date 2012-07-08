@@ -8,7 +8,7 @@ from django.contrib.auth import login, authenticate
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.views import create_group, join_group
 from group_mail.apps.group.forms import CreateOrJoinGroupForm
-from group_mail.apps.common.forms import AddEmailForm, ClaimEmailForm
+from group_mail.apps.common.forms import ClaimEmailForm
 from group_mail.apps.common.tokens import claim_email_token_generator
 
 
@@ -109,19 +109,9 @@ def email_removed(request, email):
 
 def _valid_claim_email_resp(form, user):
     email = form.cleaned_data['email']
-    # we want to create an email object for the email if it doesn't already
-    # exist, since much of our claim logic assumes one exists
-    _create_email_object(email)
     form.save(claim_user=user)
     return HttpResponseRedirect(reverse(claim_email_sent,
         kwargs={'email': email}))
-
-
-def _create_email_object(email):
-    """
-    Creates an Email object by creating an incomplete user with that email.
-    """
-    CustomUser.objects.get_or_create_user(email=email)
 
 
 def claim_email(request, email):
@@ -168,7 +158,13 @@ def claim_email_confirm(request, uidb36=None, token=None, email=None):
         old_user.remove_email(email)
 
         # add the email to the claim_user's account
-        new_user = _add_email_to_claim_user(email, claim_user)
+        if claim_user:
+            claim_user.populate(email)
+        else:
+            # There is no claim_user, so we have a "new" user account.
+            # This account is incomplete and its only email is email.
+            # This account is created in remove_email().
+            new_user = CustomUser.objects.get(email=email)
 
         # post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
         validlink = True
@@ -193,16 +189,3 @@ def _get_user_from_uid(uidb36):
         except (ValueError, CustomUser.DoesNotExist):
             valid_uid = False
     return claim_user, valid_uid
-
-
-def _add_email_to_claim_user(email, claim_user):
-    """
-    Adds email to claim_user. If we create a new account for the user because
-    claim_user is None, return the new user. Else, return None.
-    """
-    if claim_user:
-        claim_user.populate(email)
-        return None
-    else:
-        # need to create a new account for the user
-        return CustomUser.objects.create_user(email=email)

@@ -5,29 +5,6 @@ from group_mail.apps.registration.forms import UserEmailForm
 # CustomPasswordResetForm lives in custom_user_manager.py
 
 
-class AddEmailForm(UserEmailForm):
-    email = forms.EmailField(max_length=CustomUser.MAX_LEN,
-            label="Do you have an email that doesn't appear below?  Add it here:",
-            widget=forms.TextInput(attrs={
-                'class': 'input-small',
-                'placeholder': 'e.g.: brian@gmail.com'}))
-
-    def __init__(self, claim_user, *args, **kwargs):
-        super(UserEmailForm, self).__init__(*args, **kwargs)
-        self.claim_user = claim_user
-
-    def clean_email(self):
-        try:
-            return super(AddEmailForm, self).clean_email()
-        except CustomUser.DuplicateEmail:
-            email = self.cleaned_data['email']
-            if self.claim_user.has_email(email):
-                raise CustomUser.DuplicateEmail(
-                        msg='The email already belongs to your account.')
-            else:
-                raise CustomUser.DuplicateEmail(email=email, include_link=True)
-
-
 class ClaimEmailForm(forms.Form):
     email = forms.EmailField(max_length=CustomUser.MAX_LEN,
             label="Do you have an email that doesn't appear below?  Add it here:",
