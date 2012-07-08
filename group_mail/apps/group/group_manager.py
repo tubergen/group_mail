@@ -31,7 +31,8 @@ class GroupManager(models.Manager):
         except ValidationError:
             raise
         current_site = Site.objects.get_current()
-        url = self._get_confirm_url(cmd_str, group_name, group_code, email)
+        domain = current_site.domain
+        url = self._get_confirm_url(cmd_str, group_name, group_code, email, domain)
         c = {
             'cmd_str': cmd_str,
             'email': email,
@@ -48,7 +49,7 @@ class GroupManager(models.Manager):
         # send_mail(subject, email, from_email, [claim_email_addr])
         send_mail(subject, email, None, ['brian.tubergen@gmail.com'])
 
-    def _get_confirm_url(self, cmd_str, group_name, group_code, email):
+    def _get_confirm_url(self, cmd_str, group_name, group_code, email, domain):
         from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd
         """
         Returns the group confirm url for the given cmd_str. Populates
@@ -56,6 +57,9 @@ class GroupManager(models.Manager):
 
         This probably isn't the right way to get the url for the group
         confirm email, but it's easy.
+
+        We should probably also make sure there's no security vulnerability
+        by putting the user-specified group name and code in the url.
         """
         url = None
         if cmd_str == CreateGroupCmd.CMD_STR:
@@ -65,6 +69,8 @@ class GroupManager(models.Manager):
         if url:
             url += ('?group_name=%s&group_code=%s&email=%s' % \
                     (group_name, group_code, email))
+        if url:
+            url = 'http://%s%s' % (domain, url)
         return url
 
     def validate_group(self, group_name, group_code):

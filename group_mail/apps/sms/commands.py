@@ -70,7 +70,7 @@ class Command(Utilities):
         return user, resp
 
     def get_cmd_info(self, sms_fields, from_number):
-        sms_dict = {'cmd_str': str(self), 'group_name': sms_fields[1],
+        sms_dict = {'cmd_str': self.CMD_STR, 'group_name': sms_fields[1],
             'group_code': sms_fields[2], 'email': sms_fields[3]}
         # we don't use the user, but we still call get_or_create_user() to make sure
         # that the user's account exists, or to create an account if it doesn't
@@ -104,7 +104,7 @@ class Command(Utilities):
                 " The proper format is:\n%s" % USAGE[self.cmd] + str(sms_fields))
 
     def __str__(self):
-        return self.CMD_STR[1:]
+        return self.CMD_STR
 
 
 class CreateGroupCmd(Command):

@@ -1,9 +1,8 @@
-{% if cmd_str == "join" %}
-  You're receiving this message because your email was signed up for the group {{ group_name }} from a phone number we didn't recognize.
+{% if cmd_str == "#join" %}
+You're receiving this message because your email was signed up for the group {{ group_name }} from a phone number we didn't recognize.
 {% else %}
-  You're receiving this message because the group {{ group_name }} was created using this email from a phone number we didn't recognize.
+You're receiving this message because the group {{ group_name }} was created using this email from a phone number we didn't recognize.
 {% endif %}
-
 If you wish to confirm this action, please follow the link below and log in. 
 
 {{ confirm_group_url }}
