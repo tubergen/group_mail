@@ -1,10 +1,11 @@
-from django.test import TestCase
+from group_mail.apps.test.test_utils import NoMMTestCase
 from group_mail.apps.common.models import CustomUser, Email
 from group_mail.apps.group.models import Group
 
 
-class EmailTest(TestCase):
+class EmailTest(NoMMTestCase):
     def setUp(self):
+        super(EmailTest, self).setUp()
         self.kwargs = {'email': 'myemail@gmail.com',
                 'first_name': None,
                 'last_name': 'last_name',

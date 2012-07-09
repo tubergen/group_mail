@@ -26,7 +26,7 @@ class Group(models.Model):
             try:
                 email_obj = Email.objects.get(email=email)
                 self.emails.remove(email_obj)
-                self.admins.remove(email_obj)
+                self.admin_emails.remove(email_obj)
             except Email.DoesNotExist:
                 pass
 

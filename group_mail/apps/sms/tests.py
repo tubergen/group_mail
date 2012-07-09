@@ -5,6 +5,7 @@
 from django.test import TestCase
 from django.test import Client
 from django.conf import settings
+from group_mail.apps.test.test_utils import NoMMTestCase
 from group_mail.apps.sms.commands import CreateGroupCmd, JoinGroupCmd, Command, Utilities
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.models import Group
@@ -48,16 +49,7 @@ class ParseSMSTest(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class _CmdTestCase(TestCase):
-    def setUp(self):
-        self.old_modify = settings.MODIFY_MAILMAN_DB
-        settings.MODIFY_MAILMAN_DB = False
-
-    def tearDown(self):
-        settings.MODIFY_MAILMAN_DB = True
-
-
-class CreateGroupCmdTest(_CmdTestCase):
+class CreateGroupCmdTest(NoMMTestCase):
     def setUp(self):
         super(CreateGroupCmdTest, self).setUp()
         self.sms_fields = ['#create', 'group_name', 'group_code', 'email@gmail.com']
@@ -146,7 +138,7 @@ class CreateGroupCmdTest(_CmdTestCase):
         self.assertTrue(len(groups) == 1, 'There exists two groups with the same name')
 
 
-class JoinGroupCmdTest(_CmdTestCase):
+class JoinGroupCmdTest(NoMMTestCase):
     def setUp(self):
         super(JoinGroupCmdTest, self).setUp()
         self.sms_fields = ['#create', 'group_name', 'group_code', 'email@gmail.com']

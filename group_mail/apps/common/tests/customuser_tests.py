@@ -7,13 +7,14 @@ need to unit test deactivate to ensure that we can deactivate multiple accounts
 
 
 from django.db import IntegrityError
-from django.test import TestCase
 from group_mail.apps.common.models import CustomUser, Email
+from group_mail.apps.test.test_utils import NoMMTestCase
 from group_mail.apps.group.models import Group
 
 
-class CustomUserTest(TestCase):
+class CustomUserTest(NoMMTestCase):
     def setUp(self):
+        super(CustomUserTest, self).setUp()
         self.kwargs = {'email': 'myemail@gmail.com',
                 'first_name': None,
                 'last_name': 'last_name',
@@ -129,30 +130,35 @@ class CustomUserTest(TestCase):
         """
         Common code that tests whether remove_email worked properly.
         """
+        # get a fresh user from the db, since the fields may have been changed
+        u = CustomUser.objects.get(id=u.id)
         self.assertEqual(len(u.email_set.all()), 1, 'wrong number of emails after remove')
         self.assertEqual(remaining_email, u.email, 'user has wrong email after remove')
 
         try:
             Email.objects.get(email=removed_email)
-            self.assertTrue(False, 'email object not deleted')
         except Email.DoesNotExist:
-            pass  # we expect the email object to have been deleted
+            self.assertTrue(False, 'email object was improperly deleted')
 
     def after_deactivate_test(self, u):
         """
         Common code that tests whether account deactivation worked properly.
         """
-        self.assertEqual(len(u.email_set.all()), 0, 'wrong number of emails after remove')
-        self.assertEqual(u.email, '', 'email not cleared on deactivated user')
-        self.assertEqual(u.username, '', 'username not cleared on deactivated user')
-        self.assertEqual(u.phone_number, '', 'phone_number not cleared on deactivated user')
+        # get a fresh user from the db, since the fields may have been changed
+        u = CustomUser.objects.get(id=u.id)
+        self.assertNotEqual(u.email, self.kwargs['email'], 'email not cleared on deactivated user')
+        self.assertNotEqual(u.username, self.kwargs['email'], 'username not cleared on deactivated user')
+        self.assertNotEqual(u.phone_number, self.kwargs['phone_number'], 'phone_number not cleared on deactivated user')
         self.assertEqual(u.is_active, False, 'deactivated user not inactive')
 
         try:
             Email.objects.get(email=self.kwargs['email'])
-            self.assertTrue(False, 'email object not deleted')
         except Email.DoesNotExist:
-            pass  # we expect the email object to have been deleted
+            self.assertTrue(False, 'email object was improperly deleted')
+
+        """
+        Currently, a deactivate() doesn't delete the email, so it's not possible to
+        create a new user with that email. Thus we comment out the following code:
 
         u2 = CustomUser.objects.create_user(**self.kwargs)
         self.assertNotEqual(u2.id, u.id, 'new user and deleted user have same id')
@@ -160,3 +166,4 @@ class CustomUserTest(TestCase):
 
         email_obj = Email.objects.get(email=self.kwargs['email'])
         self.assertEqual(u2.id, email_obj.user.id, 'email_obj points to wrong user')
+        """

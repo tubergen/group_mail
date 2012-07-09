@@ -1,10 +1,11 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from group_mail.apps.test.test_utils import NoMMTestCase
 from group_mail.apps.common.models import CustomUser, Email
 
 
-class GetMethodTest(TestCase):
+class GetMethodTest(NoMMTestCase):
     def setUp(self):
+        super(GetMethodTest, self).setUp()
         self.kwargs = {'email': 'myemail@gmail.com',
                 'first_name': 'first_name',
                 'last_name': 'last_name',
@@ -29,8 +30,9 @@ class GetMethodTest(TestCase):
     """
 
 
-class CreateUserTest(TestCase):
+class CreateUserTest(NoMMTestCase):
     def setUp(self):
+        super(CreateUserTest, self).setUp()
         self.kwargs = {'email': 'myemail@gmail.com',
                 'first_name': 'first_name',
                 'last_name': 'last_name',
@@ -108,8 +110,9 @@ class CreateUserTest(TestCase):
             pass
 
 
-class GetOrCreateUserTest(TestCase):
+class GetOrCreateUserTest(NoMMTestCase):
     def setUp(self):
+        super(GetOrCreateUserTest, self).setUp()
         self.kwargs = {'email': 'myemail@gmail.com',
                 'phone_number': '1234567890',
                 'first_name': None,

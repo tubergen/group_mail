@@ -15,6 +15,9 @@ class EmailUtils():
         """
         If necessary, changes the owner of email_obj to not have
         a username or primary email NOT equal to email_obj's email.
+
+        Note that callers of this method that have references to email_obj.user
+        may need to requery the database to get an updated user object.
         """
         owner = email_obj.user
         email = email_obj.email
@@ -38,7 +41,7 @@ class EmailUtils():
 
         This code might do unnecessary database lookups.
         """
-        for user_email in user.email_set.all():
-            if user_email.email != email_obj.email:
-                return user_email.email
+        for user_email_obj in user.email_set.all():
+            if user_email_obj.email != email_obj.email:
+                return user_email_obj.email
         return None

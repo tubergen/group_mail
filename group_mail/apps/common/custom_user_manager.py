@@ -107,6 +107,8 @@ class CustomUserManager(UserManager):
         Creates a fresh, new account for the email, even if the email
         is already associated with a different account. The email will be
         removed from the other account if that "other account" exists.
+
+        Returns the newly created user.
         """
         user = super(CustomUserManager, self).create_user(
                 username=email, email=email, password=password)
@@ -114,6 +116,8 @@ class CustomUserManager(UserManager):
 
         if send_welcome:
             self.send_welcome_email(email)
+
+        return user
 
     def create_user(self, email, password=None, first_name=None,
             last_name=None, phone_number=None, send_welcome=True):
@@ -142,7 +146,7 @@ class CustomUserManager(UserManager):
                 raise CustomUser.DuplicatePhoneNumber(phone_number=phone_number)
 
         # create the user
-        self.create_fresh_user(email, password, first_name, last_name,
+        user = self.create_fresh_user(email, password, first_name, last_name,
                 phone_number, send_welcome)
 
         return user
