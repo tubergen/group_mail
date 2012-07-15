@@ -16,12 +16,45 @@ class Utilities(object):
     def respond(self, *args):
         r = Response()
         for msg in reversed(args):
-            r.sms(msg)
+            for text_msg in self.truncate_msg(msg):
+                r.sms(text_msg)
         return r
 
+    def truncate_msg(self, text):
+        """
+        Truncates text to MAX_SMS_LEN.
+
+        This function won't work properly if the messge needs to be broken
+        into more than 9 chunks.
+        """
+        text_len = len(text)
+        if text_len <= MAX_SMS_LEN:
+            return text
+
+        # break the text message into chunks
+        paren_format = '(X/Y) '
+        max_len = MAX_SMS_LEN - len(paren_format)
+        start = 0
+        chunks = []
+        done = False
+        while start < text_len and not done:
+            end = min(start + max_len, text_len)
+            chunk = text[start:end]
+            if end != text_len:
+                last_space = chunk.rfind(' ')
+                chunk = chunk[0:last_space]  # don't cut off the middle of a word
+                start = last_space + 1
+            else:
+                done = True
+            chunks.append(chunk)
+
+        # append the (X/Y)
+        num_chunks = len(chunks)
+        for i in range(0, num_chunks):
+            chunks[i] = '(%d/%d) ' % (i + 1, num_chunks) + chunks[i]
+        return chunks
+
     def truncate(self, text, max_len, include_ellipses=True):
-        """ Truncates text to max_len. If include_ellipses is set to True,
-            max_len must be >= 3 characters. """
         if len(text) > max_len:
             if include_ellipses:
                 assert(max_len >= 3)
@@ -53,7 +86,7 @@ class Command(Utilities):
         try:
             user = CustomUser.objects.get_or_create_user(email=email, phone_number=from_number)
         except CustomUser.InconsistentPhoneNumber as e:
-            resp = self.respond(str(e), "We'll send you an email with instructions about how"
+            resp = self.respond(str(e) + " We'll send you an email with instructions about how"
                     " to confirm your identity and %s the group." % str(self))
             try:
                 Group.objects.send_group_confirm_email(**sms_dict)
