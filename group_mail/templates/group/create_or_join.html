@@ -1,12 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{{ type }} Group{% endblock %}
-{% block pagetitle %}{{ type }} Group{% endblock %}
+{% block title %}{{ type }}{% endblock %}
+{% block pagetitle %}{{ type }}{% endblock %}
 {% block content %}
 
 <form method="post" action="/{{ type.lower }}/group/">
 {% csrf_token %}
   {% include "generic_fields.html" %}
-  <input type="submit" name="submit" value="{{ type }}" />
-</form>
+  <input class="btn" type="submit" align="right" name="submit" value="{{ type }}" /> </form>
 
 {% endblock %}

@@ -78,7 +78,7 @@ def create_group(request):
 
     return render_to_response('group/create_or_join.html',
                               {'form': form,
-                               'type': 'Create'},
+                               'type': TYPE_CREATE},
                               RequestContext(request))
 
 
@@ -101,7 +101,7 @@ def join_group(request):
 
     return render_to_response('group/create_or_join.html',
                               {'form': form,
-                               'type': 'Join'},
+                               'type': TYPE_JOIN},
                               RequestContext(request))
 
 
