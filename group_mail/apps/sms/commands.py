@@ -16,8 +16,8 @@ class Utilities(object):
     def respond(self, *args):
         r = Response()
         for msg in reversed(args):
-            for text_msg in self.truncate_msg(msg):
-                r.sms(text_msg)
+            #for text_msg in self.truncate_msg(msg):
+            r.sms(msg)
         return r
 
     def truncate_msg(self, text):
@@ -134,7 +134,7 @@ class Command(Utilities):
 
     def invalid_cmd(self, sms_fields):
         return self.respond("We couldn't understand your %s request." % self.cmd +
-                " The proper format is:\n%s" % USAGE[self.cmd] + str(sms_fields))
+                " The proper format is:\n%s" % USAGE[self.cmd])
 
     def __str__(self):
         return self.CMD_STR
