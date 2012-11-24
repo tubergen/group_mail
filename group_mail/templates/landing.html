@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 
 {% block title %}Group Mail{% endblock %}
-{% block pagetitle %}{{ type }}Group Mail{% endblock %}
+{% block pagetitle %}{% endblock %}
 {% block content %}
 
-<form method="post" action="">
-{% csrf_token %}
-  {% include "generic_fields.html" %}
-  <input type="submit" name="submit" value="{{ type_create }}" />
-  <input type="submit" name="submit" value="{{ type_join }}" />
-</form>
+<div class="landing-form">
+  <form method="post" action="">
+    {% csrf_token %}
+    {% include "generic_fields.html" %}
+    <input class="btn" type="submit" name="submit" value="{{ type_create }} Group" />
+    <input class="btn" type="submit" name="submit" value="{{ type_join }} Group" />
+  </form>
+</div>
 
 {% endblock %}
 
