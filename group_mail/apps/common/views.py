@@ -5,6 +5,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
+from group_mail.apps.common.constants import TYPE_CREATE, TYPE_JOIN
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.views import create_group, join_group
 from group_mail.apps.group.forms import CreateOrJoinGroupForm
@@ -30,17 +31,17 @@ def landing_page(request):
             Now that we've created the user from the email, we pass off the rest
             of the validation to the dedicated create / join group functions.
             """
-            if request.POST['submit'] == 'Create':
+            if request.POST['submit'] == TYPE_CREATE:
                 return create_group(request)
-            elif request.POST['submit'] == 'Join':
+            elif request.POST['submit'] == TYPE_JOIN:
                 return join_group(request)
     else:
         form = CreateOrJoinGroupForm()
 
     return render_to_response('landing.html',
                               {'form': form,
-                               'type_create': 'Create',
-                               'type_join': 'Join'},
+                               'type_create': TYPE_CREATE,
+                               'type_join': TYPE_JOIN},
                               RequestContext(request))
 
 

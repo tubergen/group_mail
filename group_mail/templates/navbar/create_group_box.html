@@ -1,16 +1,16 @@
-<!-- Create Group Box
+<!-- Create or Join Group Navbar Box
 ============================================================ -->
 <div class="pull-right">
-  <div class="span1.5 text">Create a group</div>
-  <form action="/create/group/" method="post" class="navbar-form pull-right">
+  <form action="/action/group/" method="post" class="navbar-form pull-right">
     {% csrf_token %}
     {% comment %}
     <input type="text" class="input-medium" id="group-name-field" placeholder='Group name'>
     <input type="text" class="input-small" id="group-code-field" placeholder='Group code'>
     {% endcomment %}
-    {{ create_group_navbar_form.group_name }}
-    {{ create_group_navbar_form.group_code }}
-    <button class="btn" type="submit">Create</button>
+    {{ group_navbar_form.group_name }}
+    {{ group_navbar_form.group_code }}
+    <input class="btn" type="submit" name="submit" value="{{ type_create }}" />
+    <input class="btn" type="submit" name="submit" value="{{ type_join }}" />
   </form>
 </div>
 <!-- ======================================================= -->

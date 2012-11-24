@@ -1,9 +1,12 @@
-from group_mail.apps.group.forms import CreateGroupNavbarForm
+from group_mail.apps.common.constants import TYPE_CREATE, TYPE_JOIN
+from group_mail.apps.group.forms import GroupNavbarForm
 
 
-def create_group_navbar_form(request):
+def group_navbar_form(request):
     if request.user.is_authenticated():
-        return {'create_group_navbar_form':
-                CreateGroupNavbarForm(request.user)}
+        return {'group_navbar_form':
+                GroupNavbarForm(request.user),
+                'type_create': TYPE_CREATE,
+                'type_join': TYPE_JOIN}
     else:
         return {}

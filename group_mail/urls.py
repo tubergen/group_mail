@@ -3,7 +3,7 @@ from django.conf.urls import patterns, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from group_mail.apps.sms.views import parse_sms
 from group_mail.apps.common.views import homepage_splitter, claim_email, email_added, email_removed, claim_email_confirm, claim_email_sent
-from group_mail.apps.group.views import group_info, create_group, join_group
+from group_mail.apps.group.views import group_info, create_group, join_group, action_group
 from group_mail.apps.populate_db.views import populate
 from group_mail.apps.registration.views import register, register_thanks
 from group_mail.apps.registration.djviews import password_reset_confirm
@@ -19,6 +19,7 @@ urlpatterns = patterns('',
     (r'^twilio_reply/$', parse_sms),
     (r'^$', homepage_splitter),
     (r'^group/(?P<group_name>[0-9A-Za-z]+)$', group_info),
+    (r'^action/group/$', action_group),
     (r'^create/group/$', create_group),
     (r'^join/group/$', join_group),
     (r'^email/added/(?P<email>.+)$', email_added),

@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
+from group_mail.apps.common.constants import TYPE_CREATE, TYPE_JOIN
 from group_mail.apps.group.models import Group
 from group_mail.apps.common.models import CustomUser
 from group_mail.apps.group.forms import CreateGroupForm, JoinGroupForm, AddMembersForm
@@ -102,3 +103,11 @@ def join_group(request):
                               {'form': form,
                                'type': 'Join'},
                               RequestContext(request))
+
+
+def action_group(request):
+    if request.method == 'POST' and 'submit' in request.POST:
+        if request.POST['submit'] == TYPE_CREATE:
+            return create_group(request)
+        elif request.POST['submit'] == TYPE_JOIN:
+            return join_group(request)

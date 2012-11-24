@@ -103,7 +103,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.static',
     'django.core.context_processors.tz',
     'django.contrib.messages.context_processors.messages',
-    'group_mail.apps.group.context_processors.create_group_navbar_form',
+    'group_mail.apps.group.context_processors.group_navbar_form',
 )
 
 MIDDLEWARE_CLASSES = (

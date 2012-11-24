@@ -73,7 +73,7 @@ class CreateOrJoinGroupForm(GroupForm, UserEmailForm):
             return email
 
 
-class CreateGroupNavbarForm(CreateGroupForm):
+class GroupNavbarForm(CreateGroupForm):
     group_name = forms.CharField(max_length=Group.MAX_LEN,
             widget=forms.TextInput(attrs={
                 'class': 'input-medium',
